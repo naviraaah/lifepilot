@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "date": "2025-11-20",
+    "merchant": "Unknown Online Store",
+    "amount": 127.50,
+    "category": "shopping",
+    "status": "pending",
+    "suspicious": true
+  },
+  {
+    "id": 2,
+    "date": "2025-11-19",
+    "merchant": "Grocery Mart",
+    "amount": 84.32,
+    "category": "groceries",
+    "status": "completed",
+    "suspicious": false
+  },
+  {
+    "id": 3,
+    "date": "2025-11-18",
+    "merchant": "Gas Station XYZ",
+    "amount": 250.00,
+    "category": "fuel",
+    "status": "completed",
+    "suspicious": true
+  }
+]
+

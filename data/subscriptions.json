@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "name": "Netflix Premium",
+    "amount": 22.99,
+    "frequency": "monthly",
+    "nextBillingDate": "2025-12-01",
+    "status": "active"
+  },
+  {
+    "id": 2,
+    "name": "Gym Membership",
+    "amount": 89.99,
+    "frequency": "monthly",
+    "nextBillingDate": "2025-11-28",
+    "status": "active"
+  },
+  {
+    "id": 3,
+    "name": "Cloud Storage Pro",
+    "amount": 9.99,
+    "frequency": "monthly",
+    "nextBillingDate": "2025-12-05",
+    "status": "active"
+  }
+]
+

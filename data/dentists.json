@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "name": "Dr. Sarah Chen",
+    "practice": "Downtown Dental Care",
+    "phone": "555-0123",
+    "address": "123 Main St, San Francisco, CA 94102",
+    "availability": ["Mon 9-5", "Wed 9-5", "Fri 9-3"]
+  },
+  {
+    "id": 2,
+    "name": "Dr. Michael Rodriguez",
+    "practice": "Bay Area Dentistry",
+    "phone": "555-0456",
+    "address": "456 Market St, San Francisco, CA 94103",
+    "availability": ["Tue 10-6", "Thu 10-6", "Sat 9-1"]
+  },
+  {
+    "id": 3,
+    "name": "Dr. Emily Watson",
+    "practice": "Smile Studio",
+    "phone": "555-0789",
+    "address": "789 Valencia St, San Francisco, CA 94110",
+    "availability": ["Mon 8-4", "Tue 8-4", "Thu 8-4"]
+  }
+]
+
