@@ -14,6 +14,15 @@ export interface AgentResponse {
   summary: string;
   details: any;
   originalInput?: string;
+  routedAgent?: string;
+  intent?: string;
+  confidence?: number;
+  status?: string;
+  sessionId?: string;
+  task?: string;
+  product?: string;
+  retailers?: string[];
+  productName?: string;
 }
 
 export interface Dentist {
@@ -44,8 +53,24 @@ export interface Transaction {
   suspicious: boolean;
 }
 
-// Agent endpoint
-export const sendAgentRequest = async (input: string): Promise<AgentResponse> => {
+// Unified Agent endpoint - routes to appropriate agent automatically
+export const sendAgentRequest = async (
+  input: string, 
+  userId?: string, 
+  pollInterval?: number, 
+  maxWaitTime?: number
+): Promise<AgentResponse> => {
+  const response = await api.post('/api/agent', { 
+    input, 
+    userId, 
+    pollInterval, 
+    maxWaitTime 
+  });
+  return response.data;
+};
+
+// Legacy agent endpoint (kept for backward compatibility)
+export const sendLegacyAgentRequest = async (input: string): Promise<AgentResponse> => {
   const response = await api.post('/agent', { input });
   return response.data;
 };
@@ -163,7 +188,7 @@ export interface ActionStatus {
 }
 
 export const createActionPlan = async (userId: string, actionType: string, input: string): Promise<ActionPlan> => {
-  const response = await api.post('/api/actions/plan', { userId, actionType, input });
+  const response = await api.post('/api/agent', { userId, actionType, input });
   return response.data;
 };
 

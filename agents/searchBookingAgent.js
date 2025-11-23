@@ -160,20 +160,118 @@ async function deleteSession(sessionId) {
  */
 async function monitorSession(sessionId, pollInterval = 2000, maxWaitTime = 300000) {
   const startTime = Date.now();
+  let lastMessageCount = 0;
+  let pollCount = 0;
+  
+  console.log(`[monitorSession] Starting to monitor session: ${sessionId}`);
+  console.log(`[monitorSession] Poll interval: ${pollInterval}ms, Max wait time: ${maxWaitTime}ms`);
   
   while (true) {
-    const status = await getStatus(sessionId);
+    pollCount++;
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
     
-    if (status.status === 'finished' || status.status === 'error') {
-      return status;
+    try {
+      const status = await getStatus(sessionId);
+      
+      // Log status every few polls or when status changes
+      if (pollCount === 1 || pollCount % 5 === 0) {
+        console.log(`[monitorSession] Poll #${pollCount} - Status: ${status.status} (${elapsed}s elapsed)`);
+      }
+      
+      // Get messages to see what agent is doing
+      try {
+        const messages = await getMessages(sessionId);
+        const currentMessageCount = messages.length;
+        
+        // If new messages appeared, log them
+        if (currentMessageCount > lastMessageCount) {
+          const newMessages = messages.slice(lastMessageCount);
+          console.log(`[monitorSession] 📨 New messages detected (${newMessages.length} new)`);
+          
+          newMessages.forEach((msg, index) => {
+            if (msg.type === 'message') {
+              console.log(`[monitorSession] 💬 Message ${lastMessageCount + index + 1}:`);
+              console.log(`[monitorSession]    Role: ${msg.role}`);
+              if (msg.content) {
+                const contentPreview = msg.content.substring(0, 200);
+                console.log(`[monitorSession]    Content: ${contentPreview}${msg.content.length > 200 ? '...' : ''}`);
+              }
+            } else if (msg.type === 'action') {
+              console.log(`[monitorSession] ⚙️  Action ${lastMessageCount + index + 1}:`);
+              console.log(`[monitorSession]    Type: ${msg.action_type || 'unknown'}`);
+              if (msg.description) {
+                console.log(`[monitorSession]    Description: ${msg.description}`);
+              }
+            } else if (msg.type === 'search') {
+              console.log(`[monitorSession] 🔍 Search ${lastMessageCount + index + 1}:`);
+              console.log(`[monitorSession]    Query: ${msg.query || 'N/A'}`);
+              if (msg.url) {
+                console.log(`[monitorSession]    URL: ${msg.url}`);
+              }
+            } else if (msg.type === 'navigation') {
+              console.log(`[monitorSession] 🧭 Navigation ${lastMessageCount + index + 1}:`);
+              console.log(`[monitorSession]    URL: ${msg.url || 'N/A'}`);
+            } else if (msg.type === 'click' || msg.type === 'type' || msg.type === 'scroll') {
+              console.log(`[monitorSession] 🖱️  ${msg.type.toUpperCase()} ${lastMessageCount + index + 1}:`);
+              if (msg.selector) {
+                console.log(`[monitorSession]    Selector: ${msg.selector}`);
+              }
+              if (msg.text) {
+                console.log(`[monitorSession]    Text: ${msg.text}`);
+              }
+            } else if (msg.type === 'DONE') {
+              console.log(`[monitorSession] ✅ Task completed!`);
+              if (msg.content) {
+                const contentPreview = msg.content.substring(0, 200);
+                console.log(`[monitorSession]    Result preview: ${contentPreview}${msg.content.length > 200 ? '...' : ''}`);
+              }
+            } else {
+              console.log(`[monitorSession] 📋 ${msg.type.toUpperCase()} ${lastMessageCount + index + 1}:`);
+              console.log(`[monitorSession]    Data: ${JSON.stringify(msg).substring(0, 150)}...`);
+            }
+          });
+          
+          lastMessageCount = currentMessageCount;
+        }
+      } catch (msgError) {
+        // Don't fail monitoring if we can't get messages
+        if (pollCount % 10 === 0) {
+          console.log(`[monitorSession] ⚠️  Could not fetch messages (this is okay): ${msgError.message}`);
+        }
+      }
+      
+      // Check if finished or error
+      if (status.status === 'finished') {
+        console.log(`[monitorSession] ✅ Session completed successfully after ${elapsed}s`);
+        return status;
+      }
+      
+      if (status.status === 'error') {
+        console.log(`[monitorSession] ❌ Session error after ${elapsed}s`);
+        console.log(`[monitorSession]    Error: ${status.error || 'Unknown error'}`);
+        return status;
+      }
+      
+      // Show progress indicator
+      if (pollCount % 10 === 0) {
+        const progressPercent = Math.min(100, Math.round((elapsed / (maxWaitTime / 1000)) * 100));
+        console.log(`[monitorSession] ⏳ Still processing... (${progressPercent}% of max time)`);
+      }
+      
+      // Check for timeout
+      if (Date.now() - startTime > maxWaitTime) {
+        console.log(`[monitorSession] ⏰ Timeout reached after ${elapsed}s`);
+        throw new Error('Session monitoring timeout');
+      }
+      
+      await sleep(pollInterval);
+    } catch (error) {
+      if (error.message === 'Session monitoring timeout') {
+        throw error;
+      }
+      console.error(`[monitorSession] ⚠️  Error during monitoring (continuing): ${error.message}`);
+      await sleep(pollInterval);
     }
-    
-    // Check for timeout
-    if (Date.now() - startTime > maxWaitTime) {
-      throw new Error('Session monitoring timeout');
-    }
-    
-    await sleep(pollInterval);
   }
 }
 
@@ -186,6 +284,10 @@ async function monitorSession(sessionId, pollInterval = 2000, maxWaitTime = 3000
  * @returns {Promise<Object>} Result object with action, summary, and details
  */
 async function runSearchBookingAgent(task, options = {}) {
+  console.log('[searchBookingAgent] runSearchBookingAgent called');
+  console.log('[searchBookingAgent] Task:', task);
+  console.log('[searchBookingAgent] Options:', options);
+  
   const { pollInterval = 2000, maxWaitTime = 300000 } = options;
   let sessionId = null;
   
@@ -280,6 +382,10 @@ async function runSearchBookingAgent(task, options = {}) {
  * @returns {Promise<Object>} Search results
  */
 async function searchBestOptions(query, options = {}) {
+  console.log('[searchBookingAgent] searchBestOptions called');
+  console.log('[searchBookingAgent] Query:', query);
+  console.log('[searchBookingAgent] Options:', options);
+  
   const task = `${query}. Return results as JSON with comparison details.`;
   return await runSearchBookingAgent(task, options);
 }
@@ -295,6 +401,11 @@ async function searchBestOptions(query, options = {}) {
  * @returns {Promise<Object>} Booking result
  */
 async function bookAppointment(appointmentType, preferences = {}, options = {}) {
+  console.log('[searchBookingAgent] bookAppointment called');
+  console.log('[searchBookingAgent] Appointment Type:', appointmentType);
+  console.log('[searchBookingAgent] Preferences:', preferences);
+  console.log('[searchBookingAgent] Options:', options);
+  
   const { date, time, location } = preferences;
   let task = `Book a ${appointmentType} appointment`;
   
@@ -317,6 +428,11 @@ async function bookAppointment(appointmentType, preferences = {}, options = {}) 
  * @returns {Promise<Object>} Price comparison results
  */
 async function checkPrices(product, retailers, options = {}) {
+  console.log('[searchBookingAgent] checkPrices called');
+  console.log('[searchBookingAgent] Product:', product);
+  console.log('[searchBookingAgent] Retailers:', retailers);
+  console.log('[searchBookingAgent] Options:', options);
+  
   const { pollInterval = 2000, maxWaitTime = 300000 } = options;
   let sessionId = null;
 
@@ -457,6 +573,10 @@ Return as JSON array.
  * @returns {Promise<Object>} Research results
  */
 async function researchProduct(productName, options = {}) {
+  console.log('[searchBookingAgent] researchProduct called');
+  console.log('[searchBookingAgent] Product Name:', productName);
+  console.log('[searchBookingAgent] Options:', options);
+  
   const { pollInterval = 2000, maxWaitTime = 300000 } = options;
   let sessionId = null;
 

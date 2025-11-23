@@ -8,6 +8,7 @@ const cancelSubscription = require('../tools/cancelSubscription');
 const disputeCharge = require('../tools/disputeCharge');
 const runLifePilotAgent = require('../agents/lifePilotAgent');
 const { runSearchBookingAgent, searchBestOptions, bookAppointment, checkPrices, researchProduct } = require('../agents/searchBookingAgent');
+const { routeAgent } = require('../agents/agentRouter');
 
 // Import models and services
 const User = require('./models/user');
@@ -33,7 +34,30 @@ app.get('/', (req, res) => {
   res.json({ status: "LifePilot backend running" });
 });
 
-// Main agent endpoint
+// ============= UNIFIED AGENT API =============
+// Single endpoint that analyzes user input and routes to appropriate agent
+app.post('/api/agent', async (req, res) => {
+  try {
+    const { input, userId, pollInterval, maxWaitTime } = req.body;
+    
+    if (!input) {
+      return res.status(400).json({ error: 'Input is required' });
+    }
+
+    const options = { userId };
+    if (pollInterval) options.pollInterval = pollInterval;
+    if (maxWaitTime) options.maxWaitTime = maxWaitTime;
+
+    // Route to appropriate agent based on context analysis
+    const result = await routeAgent(input, openai, options);
+    res.json(result);
+  } catch (error) {
+    console.error('Unified agent error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Legacy agent endpoint (kept for backward compatibility)
 app.post('/agent', async (req, res) => {
   try {
     const { input } = req.body;
@@ -223,7 +247,7 @@ app.post('/api/research-product', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Product research error:', error);
-
+    res.status(500).json({ error: error.message });
   }
 });
 
