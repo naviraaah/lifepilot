@@ -158,19 +158,31 @@ Clean, modern, highly readable. Friendly without being casual. Professional with
 
 ### Font Families
 
-#### Primary: **Inter** (or system fallback)
+#### Primary: **Work Sans** (Google Font)
 ```css
-font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 
+font-family: var(--font-work-sans), 'Work Sans', -apple-system, BlinkMacSystemFont, 
              'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 ```
-**Usage:** Body text, UI elements, most content
+**Usage:** All text, UI elements, body content
 
-#### Display: **Inter** (heavier weights)
-```css
-font-family: var(--font-geist-sans);
-font-weight: 700;
+**Weights Used:**
+- 300 (Light) - Body text, descriptions, subtitles
+- 400 (Regular) - Standard UI elements, buttons
+- 500 (Medium) - Navigation, emphasis
+- 600 (Semi-Bold) - Headlines, page titles
+
+#### Implementation
+```typescript
+import { Work_Sans } from "next/font/google";
+
+const workSans = Work_Sans({
+  weight: ['300', '400', '500', '600'],
+  subsets: ["latin"],
+  variable: "--font-work-sans",
+});
 ```
-**Usage:** Headlines, hero text, page titles
+
+**Typography Philosophy:** Work Sans Light (300) provides a modern, airy, and elegant feel that matches the Base44-inspired aesthetic. The lighter weight creates a more spacious and premium appearance while maintaining excellent readability.
 
 ### Type Scale
 
