@@ -7,7 +7,7 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 45000, // 45 second timeout to allow for OpenAI API calls
+  timeout: 1500000, // 5 minutes timeout to allow for AGI agent requests that may take longer
 });
 
 export interface AgentResponse {
@@ -81,7 +81,7 @@ export const sendAgentRequest = async (
     // Handle timeout errors more gracefully
     if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
       throw new Error(
-        "The request is taking longer than expected. Please try again."
+        "The request is taking longer than expected. The server is still processing your request. Please wait or try again."
       );
     }
     // If the backend returned an error response, preserve it

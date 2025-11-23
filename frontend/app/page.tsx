@@ -7,6 +7,75 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { sendAgentRequest } from "../lib/api";
 import styles from "./page.module.css";
 
+/**
+ * Converts markdown text to HTML
+ * Handles: bold (**text**), lists (- item), nested lists, line breaks, paragraphs
+ */
+function markdownToHtml(text: string): string {
+  if (!text) return "";
+  
+  // First, convert bold text (**text**) - do this before processing lines
+  // to preserve bold formatting in lists
+  let html = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  
+  // Split by line breaks
+  const lines = html.split('\n');
+  const processedLines: string[] = [];
+  let listStack: number[] = []; // Track indentation levels for nested lists
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    
+    // Calculate indentation (count leading spaces before the dash)
+    const indentMatch = line.match(/^(\s*)- /);
+    const indentLevel = indentMatch ? indentMatch[1].length : -1;
+    
+    // Check if line is a list item
+    if (indentMatch && trimmedLine.length > 2) {
+      // Extract list content (everything after "- ")
+      const listContent = trimmedLine.substring(2).trim();
+      
+      // Close lists if we're at a lower or same indentation level (going back up the hierarchy)
+      while (listStack.length > 0 && listStack[listStack.length - 1] >= indentLevel) {
+        processedLines.push('</ul>');
+        listStack.pop();
+      }
+      
+      // Open new list if we're going deeper or starting a new list
+      if (listStack.length === 0 || listStack[listStack.length - 1] < indentLevel) {
+        processedLines.push('<ul>');
+        listStack.push(indentLevel);
+      }
+      
+      // Add the list item
+      processedLines.push(`<li>${listContent}</li>`);
+    } else if (trimmedLine === '') {
+      // Empty line - close all lists
+      while (listStack.length > 0) {
+        processedLines.push('</ul>');
+        listStack.pop();
+      }
+      processedLines.push('<br>');
+    } else {
+      // Regular text line - close all lists first
+      while (listStack.length > 0) {
+        processedLines.push('</ul>');
+        listStack.pop();
+      }
+      processedLines.push(`<p>${trimmedLine}</p>`);
+    }
+  }
+  
+  // Close any remaining open lists
+  while (listStack.length > 0) {
+    processedLines.push('</ul>');
+    listStack.pop();
+  }
+  
+  return processedLines.join('');
+}
+
 // TypeScript declarations for Web Speech API
 declare global {
   interface Window {
@@ -617,8 +686,8 @@ export default function Home() {
     // Clear input
     const currentInput = input.trim();
     setInput("");
-    setActionLoading(true);
-
+      setActionLoading(true);
+      
     // Add loading message
     const loadingMessageId = (Date.now() + 1).toString();
     const loadingMessage: ChatMessage = {
@@ -943,10 +1012,10 @@ export default function Home() {
                       </div>
                     ) : message.error ? (
                       <div className={styles.errorMessage}>
-                        <p>{message.content}</p>
+                        <div dangerouslySetInnerHTML={{ __html: markdownToHtml(message.content) }} />
                       </div>
                     ) : (
-                      <p>{message.content}</p>
+                      <div dangerouslySetInnerHTML={{ __html: markdownToHtml(message.content) }} />
                     )}
                   </div>
                   {message.role === "user" && (
@@ -1234,27 +1303,27 @@ export default function Home() {
                       "Compare Sony WH-1000XM5 prices on Amazon, Best Buy, and Target"
                     )
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
                   <span className={styles.quickActionIcon}>💰</span>
                   <span className={styles.quickActionText}>Compare Prices</span>
-                </button>
-                <button
+              </button>
+              <button 
                   onClick={() =>
                     handleQuickAction(
                       "Research iPhone 15 Pro specifications and reviews"
                     )
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
                   <span className={styles.quickActionIcon}>🔍</span>
                   <span className={styles.quickActionText}>
                     Research Product
                   </span>
-                </button>
-                <button
+              </button>
+              <button 
                   onClick={() =>
                     handleQuickAction(
                       "Book a haircut appointment for this Saturday morning"
@@ -1299,9 +1368,9 @@ export default function Home() {
                 >
                   <span className={styles.quickActionIcon}>➕</span>
                   <span className={styles.quickActionText}>Add DCS</span>
-                </button>
-              </div>
+              </button>
             </div>
+          </div>
           )}
 
           {/* Footer Info */}

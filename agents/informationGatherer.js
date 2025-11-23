@@ -1,6 +1,44 @@
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
 
 /**
+ * Converts relative date strings to actual date strings (YYYY-MM-DD format)
+ * @param {string} dateString - Relative date like "tonight", "today", "tomorrow", etc.
+ * @returns {string} Actual date string in YYYY-MM-DD format
+ */
+function convertRelativeDate(dateString) {
+  if (!dateString) return null;
+  
+  const lowerDate = dateString.toLowerCase().trim();
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  // Format date as YYYY-MM-DD
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  if (lowerDate.includes('tonight') || lowerDate.includes('today') || lowerDate === 'now') {
+    return formatDate(today);
+  }
+  
+  if (lowerDate.includes('tomorrow')) {
+    return formatDate(tomorrow);
+  }
+  
+  // If it's already in YYYY-MM-DD format, return as is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // Return null if we can't determine the date
+  return null;
+}
+
+/**
  * Information Gatherer - Collects required information before routing to AGI agents
  * @param {string} userInput - User's input
  * @param {Array} conversationHistory - Previous messages in the conversation
@@ -34,12 +72,23 @@ ABSOLUTE RULES:
 - Never ask broad or multi-part questions
 - Never create unnecessary back-and-forth
 
+DATE HANDLING (CRITICAL):
+- When users say "tonight", "today", "tomorrow", "this week", "next week", etc., DO NOT ask them to provide a specific date
+- Automatically convert relative dates to actual date strings (YYYY-MM-DD format):
+  * "tonight" or "today" → use today's date (YYYY-MM-DD format)
+  * "tomorrow" → use tomorrow's date (YYYY-MM-DD format)
+  * "this week" → use today's date
+  * "next week" → calculate next week's date
+- Extract relative dates from the conversation and convert them to actual dates in the collectedInfo.date field
+- Only ask for date clarification if the user's request is ambiguous (e.g., "sometime next month" without specifics)
+
 Your job during analysis:
 1. Identify the user's task (bookAppointment, cancelSubscription, comparePrices, researchProduct, other)
 2. Identify what information we already have from the conversation
-3. Identify ONLY the critical missing info required to proceed
-4. Count how many questions have already been asked (check conversationHistory for assistant messages with questions)
-5. Decide whether we should:
+3. If date information contains relative terms like "tonight", "today", "tomorrow", automatically convert to actual date (YYYY-MM-DD format) in collectedInfo.date
+4. Identify ONLY the critical missing info required to proceed
+5. Count how many questions have already been asked (check conversationHistory for assistant messages with questions)
+6. Decide whether we should:
    - Proceed without asking anything (if we can infer/assume defaults)
    - Ask 1 single essential question (if we have asked fewer than 2 questions)
    - Stop asking further questions because the 2-question limit is reached (mark readyForAGI: true)
@@ -112,6 +161,15 @@ Always respond with valid JSON only.`
     const analysis = JSON.parse(response.choices[0].message.content);
     
     console.log('[Information Gatherer] Analysis result:', analysis);
+
+    // Convert relative dates to actual dates
+    if (analysis.collectedInfo && analysis.collectedInfo.date) {
+      const convertedDate = convertRelativeDate(analysis.collectedInfo.date);
+      if (convertedDate) {
+        console.log('[Information Gatherer] Converted relative date:', analysis.collectedInfo.date, '→', convertedDate);
+        analysis.collectedInfo.date = convertedDate;
+      }
+    }
 
     // Check if we've reached the 2-question limit
     const hasReachedLimit = questionsAsked >= 2;
@@ -190,6 +248,14 @@ Always respond with valid JSON only.`
       });
 
       const questionData = JSON.parse(questionResponse.choices[0].message.content);
+
+      // Convert relative dates before processing
+      if (analysis.collectedInfo && analysis.collectedInfo.date) {
+        const convertedDate = convertRelativeDate(analysis.collectedInfo.date);
+        if (convertedDate) {
+          analysis.collectedInfo.date = convertedDate;
+        }
+      }
 
       // If the question generator says we're ready, proceed without asking
       if (questionData.readyForAGI || !questionData.question) {

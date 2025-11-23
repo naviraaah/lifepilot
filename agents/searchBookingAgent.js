@@ -288,7 +288,7 @@ async function runSearchBookingAgent(task, options = {}) {
   console.log('[searchBookingAgent] Task:', task);
   console.log('[searchBookingAgent] Options:', options);
   
-  const { pollInterval = 5000, maxWaitTime = 600000 } = options;
+  const { pollInterval = 5000, maxWaitTime = 600000, conversationHistory = [] } = options;
   let sessionId = null;
   
   try {
@@ -307,15 +307,105 @@ async function runSearchBookingAgent(task, options = {}) {
       };
     }
 
+    // Build conversation context if available
+    let conversationContext = '';
+    if (conversationHistory && conversationHistory.length > 0) {
+      conversationContext = '\n\nCONVERSATION CONTEXT:\n';
+      conversationHistory.forEach((msg) => {
+        if (msg.role && msg.content) {
+          conversationContext += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+        }
+      });
+    }
+
+    // Wrap task with comprehensive step-by-step instructions
+    const enhancedTask = `You are LifePilot — the user's AI pilot for the boring operations of everyday life.
+Your job is to autonomously complete the user's request using multi-step reasoning and real tool execution.
+
+USER REQUEST:
+${task}${conversationContext}
+
+STEP-BY-STEP WORKFLOW:
+
+1. Parse the user's natural language request.
+   - Extract all constraints: location, date/time preferences, appointment type, etc.
+   - Identify what the user is asking for (booking, search, comparison, etc.)
+
+2. Identify the required constraints:
+   - Location requirement (if specified)
+   - Date/time preference (if specified)
+   - Service type or product (if specified)
+   - Any other relevant constraints
+
+3. Search for providers/services/products using web search.
+   - Use appropriate search terms based on the request
+   - Find multiple options to compare
+
+4. Filter the results based on:
+   - User location requirement (prioritize closest matches)
+   - Time window availability (if applicable)
+   - Next available slots (if booking appointment)
+   - Price range (if price comparison)
+   - Quality/ratings (if available)
+
+5. Select the best option using:
+   - Earliest time that matches all constraints (for appointments)
+   - Highest rating (if available)
+   - Best location match
+   - Best price (if price comparison)
+   - Availability confirmation
+
+6. For booking appointments: Fill the appointment booking form.
+   - Navigate to the booking page
+   - Fill in all required fields:
+     * Selected date and time
+     * User information (use reasonable defaults if needed)
+     * Appointment type/reason
+   - Submit the booking form
+
+7. Confirm the booking/action and retrieve confirmation details:
+   - Wait for confirmation page/email
+   - Extract confirmation details including:
+     * Provider/service name and contact information
+     * Appointment/order date and time (if applicable)
+     * Address/location (if applicable)
+     * Confirmation ID or reference number
+     * Any additional instructions
+
+8. Return a clean summary to the user including:
+   - Provider/service name
+   - Appointment/order time (if applicable)
+   - Address/location (if applicable)
+   - Confirmation ID (if applicable)
+   - Summary of what was completed
+
+AGENT RULES:
+- Never ask the user to click anything or make manual choices.
+- Don't require user to choose between options — make the decision automatically based on best match.
+- If tool results are incomplete, make your best inference and proceed.
+- Always think step-by-step before selecting tools.
+- Be proactive and autonomous — complete the entire process without user intervention.
+- If booking requires information you don't have, use reasonable defaults or infer from context.
+- Always confirm the booking/action and retrieve confirmation details before completing.
+
+If exact criteria are impossible:
+- Suggest closest times
+- Offer nearby locations
+- Provide alternative appointment types or options
+- Present the next best set of options
+- Continue progress autonomously with the best available option
+
+Return the final result as a JSON object with all relevant details, or provide a clear summary if JSON is not applicable.`;
+
     // Create session
     console.log('Creating AGI session...');
     console.log(`Using API key: ${AGI_API_KEY.substring(0, 10)}...${AGI_API_KEY.substring(AGI_API_KEY.length - 4)}`);
     sessionId = await createSession();
     console.log(`Session created: ${sessionId}`);
     
-    // Send task
+    // Send enhanced task
     console.log('Sending task to agent...');
-    await sendMessage(sessionId, task);
+    await sendMessage(sessionId, enhancedTask);
     
     // Monitor progress
     console.log('Monitoring agent progress...');

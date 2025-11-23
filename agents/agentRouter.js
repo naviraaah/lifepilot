@@ -1,6 +1,6 @@
 const runLifePilotAgent = require("./lifePilotAgent");
 const {
-  runSearchBookingAgent,
+runSearchBookingAgent,
   searchBestOptions,
   bookAppointment,
   checkPrices,
@@ -10,6 +10,58 @@ const scheduleDentist = require("../tools/scheduleDentist");
 const cancelSubscription = require("../tools/cancelSubscription");
 const disputeCharge = require("../tools/disputeCharge");
 const { gatherInformation, formatAGIPrompt } = require("./informationGatherer");
+
+/**
+ * Formats a structured prompt for searchBestOptions with conversation history and collected information
+ * Similar to how runLifePilotAgent receives structured input
+ * @param {string} userInput - Current user input
+ * @param {Array} conversationHistory - Previous conversation messages
+ * @param {Object} collectedInfo - Collected information from information gatherer
+ * @param {string} taskType - Type of task (bookAppointment, comparePrices, etc.)
+ * @returns {string} Formatted prompt with context
+ */
+function formatSearchBookingPrompt(userInput, conversationHistory = [], collectedInfo = {}, taskType = '') {
+  // Build conversation context
+  let prompt = '';
+  
+  // Add conversation history context if available
+  if (conversationHistory && conversationHistory.length > 0) {
+    prompt += 'CONVERSATION CONTEXT:\n';
+    conversationHistory.forEach((msg, index) => {
+      if (msg.role && msg.content) {
+        prompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+      }
+    });
+    prompt += '\n';
+  }
+  
+  // Add structured information if available
+  if (collectedInfo && Object.keys(collectedInfo).length > 0) {
+    prompt += 'COLLECTED INFORMATION:\n';
+    if (taskType === 'bookAppointment') {
+      if (collectedInfo.appointmentType) prompt += `- Appointment Type: ${collectedInfo.appointmentType}\n`;
+      if (collectedInfo.date) prompt += `- Date: ${collectedInfo.date}\n`;
+      if (collectedInfo.time) prompt += `- Time: ${collectedInfo.time}\n`;
+      if (collectedInfo.location) prompt += `- Location: ${collectedInfo.location}\n`;
+    } else if (taskType === 'comparePrices') {
+      if (collectedInfo.product) prompt += `- Product: ${collectedInfo.product}\n`;
+      if (collectedInfo.purpose) prompt += `- Purpose: ${collectedInfo.purpose}\n`;
+      if (collectedInfo.timeline) prompt += `- Timeline: ${collectedInfo.timeline}\n`;
+      if (collectedInfo.priority) prompt += `- Priority: ${collectedInfo.priority}\n`;
+      if (collectedInfo.retailers && collectedInfo.retailers.length > 0) {
+        prompt += `- Retailers: ${collectedInfo.retailers.join(', ')}\n`;
+      }
+    } else if (taskType === 'researchProduct') {
+      if (collectedInfo.productName) prompt += `- Product Name: ${collectedInfo.productName}\n`;
+    }
+    prompt += '\n';
+  }
+  
+  // Add the current user request
+  prompt += `CURRENT REQUEST:\n${userInput}`;
+  
+  return prompt;
+}
 
 /**
  * Agent Router - Analyzes user input and routes to appropriate agent
@@ -75,6 +127,16 @@ IMPORTANT RULES:
 - Ask ONE question at a time in a natural, conversational way
 - Be friendly and helpful, but don't proceed until you have all necessary information
 
+DATE HANDLING:
+- When users say "tonight", "today", "tomorrow", "this week", "next week", etc., DO NOT ask them to provide a specific date
+- Automatically convert relative dates to actual date strings when passing to AGI agents:
+  * "tonight" or "today" → use today's date (YYYY-MM-DD format)
+  * "tomorrow" → use tomorrow's date (YYYY-MM-DD format)
+  * "this week" → use the current week's dates
+  * "next week" → use next week's dates
+- When you have a relative date, convert it to an actual date string before proceeding
+- Only ask for date clarification if the user's request is ambiguous (e.g., "sometime next month" without specifics)
+
 Your capabilities include:
 - Having natural conversations and answering questions
 - Scheduling appointments (dentist, doctor, haircut, etc.)
@@ -84,10 +146,10 @@ Your capabilities include:
 - Finding restaurants, booking services, and more
 
 When users want to book appointments:
-- Ask: "When would you like me to book this appointment?"
-- Then ask: "What time would you like this appointment?"
-- Then ask: "What location are you looking for this appointment in?"
-- Only proceed once you have all three answers
+- If they mention "tonight", "today", "tomorrow", etc., automatically use the current date (don't ask for date)
+- Ask: "What time would you like this appointment?" (if time not specified)
+- Ask: "What location are you looking for this appointment in?" (if location not specified)
+- Only proceed once you have all necessary information
 
 When users want to cancel subscriptions:
 - Ask: "Which subscription would you like to cancel?"
@@ -97,7 +159,7 @@ When users want to cancel subscriptions:
 When users want to compare prices:
 - Ask: "What would you like me to compare prices for?"
 - Ask: "What is this for? (shopping, travel, etc.)"
-- Ask: "When do you need this?"
+- If they mention "tonight", "today", "tomorrow", etc., automatically use the current date (don't ask for date)
 - Ask: "What's most important to you - price, timing, or quality?"
 - Only proceed once you understand what they need
 
@@ -111,7 +173,7 @@ When users ask questions:
 - Be helpful and clear
 - Keep responses concise but complete
 
-CRITICAL: If you don't have all required information, ask for it. Never guess or assume. Always ask questions to gather complete information before taking action.`,
+CRITICAL: If you don't have all required information, ask for it. Never guess or assume. Always ask questions to gather complete information before taking action. EXCEPTION: For relative dates like "tonight", "today", "tomorrow" - automatically convert to actual dates without asking.`,
         },
         ...conversationMessages,
         {
@@ -138,7 +200,9 @@ CRITICAL: If you don't have all required information, ask for it. Never guess or
     const content = response.choices[0].message.content;
 
     if (!content) {
-      throw new Error("Empty response from OpenAI API");
+      // Empty response from OpenAI - fallback to AGI agent
+      console.log("[Conversational Agent] Empty response from OpenAI, falling back to AGI agent");
+      throw new Error("Empty response from OpenAI API - fallback to AGI");
     }
 
     return {
@@ -164,6 +228,33 @@ CRITICAL: If you don't have all required information, ask for it. Never guess or
       status: error.status,
       response: error.response?.data,
     });
+
+    // If OpenAI returned empty response, fallback to AGI agent
+    if (error.message && error.message.includes("Empty response from OpenAI API")) {
+      console.log("[Conversational Agent] 🔄 Falling back to AGI agent due to empty OpenAI response");
+      try {
+        // Route to AGI search booking agent
+        const agiOptions = {
+          pollInterval: 5000,
+          maxWaitTime: 600000,
+          conversationHistory: conversationHistory,
+        };
+        // Format structured prompt with conversation history for fallback
+        const formattedPrompt = formatSearchBookingPrompt(userInput, conversationHistory, {}, '');
+        const agiResult = await searchBestOptions(formattedPrompt, agiOptions);
+        return {
+          ...agiResult,
+          routedAgent: "searchBooking",
+          agiAgent: true,
+          fallback: true,
+          fallbackReason: "OpenAI empty response",
+          originalInput: userInput,
+        };
+      } catch (agiError) {
+        console.error("[Conversational Agent] AGI fallback also failed:", agiError);
+        // If AGI also fails, continue with error handling below
+      }
+    }
 
     // Provide a helpful error message
     let errorMessage =
@@ -448,10 +539,15 @@ async function routeAgent(userInput, openai, options = {}) {
           }
         }
         
-        // All information collected - format prompt and route to AGI agent
+        // All information collected - format structured prompt and route to AGI agent
         console.log("[Agent Router] ✅ All information collected, routing to AGI agent");
-        const agiPrompt = formatAGIPrompt(infoCheck.taskType, infoCheck.collectedInfo);
-        console.log("[Agent Router] Formatted AGI prompt:", agiPrompt);
+        const formattedPrompt = formatSearchBookingPrompt(
+          userInput,
+          conversationHistory,
+          infoCheck.collectedInfo,
+          infoCheck.taskType
+        );
+        console.log("[Agent Router] Formatted structured prompt:", formattedPrompt);
         
         const agiOptions = {
           ...options,
@@ -464,6 +560,8 @@ async function routeAgent(userInput, openai, options = {}) {
           let result;
           if (infoCheck.taskType === 'bookAppointment') {
             const { appointmentType, date, time, location } = infoCheck.collectedInfo;
+            // Include conversation history in options for specialized functions
+            agiOptions.conversationHistory = conversationHistory;
             result = await bookAppointment(
               appointmentType || 'appointment',
               { date, time, location },
@@ -475,12 +573,16 @@ async function routeAgent(userInput, openai, options = {}) {
             const retailerList = retailers && retailers.length > 0 
               ? retailers 
               : ['amazon.com', 'bestbuy.com', 'target.com', 'walmart.com'];
+            // Include conversation history in options
+            agiOptions.conversationHistory = conversationHistory;
             result = await checkPrices(product, retailerList, agiOptions);
           } else if (infoCheck.taskType === 'researchProduct') {
+            // Include conversation history in options
+            agiOptions.conversationHistory = conversationHistory;
             result = await researchProduct(infoCheck.collectedInfo.productName, agiOptions);
           } else {
-            // General search/booking
-            result = await runSearchBookingAgent(agiPrompt, agiOptions);
+            // General search/booking - use structured prompt with conversation history
+            result = await searchBestOptions(formattedPrompt, agiOptions);
           }
           
           console.log("[Agent Router] ✅ AGI agent completed successfully");
@@ -547,10 +649,13 @@ async function routeAgent(userInput, openai, options = {}) {
       }
       
       try {
-        const agiPrompt = infoCheck.ready 
-          ? formatAGIPrompt(infoCheck.taskType, infoCheck.collectedInfo)
-          : userInput;
-        const result = await runSearchBookingAgent(agiPrompt, agiOptions);
+        // Format structured prompt with conversation history and collected info
+        const formattedPrompt = infoCheck.ready 
+          ? formatSearchBookingPrompt(userInput, conversationHistory, infoCheck.collectedInfo, infoCheck.taskType)
+          : formatSearchBookingPrompt(userInput, conversationHistory, {}, '');
+        // Include conversation history in options
+        agiOptions.conversationHistory = conversationHistory;
+        const result = await searchBestOptions(formattedPrompt, agiOptions);
         return {
           ...result,
           routedAgent: "searchBooking",
