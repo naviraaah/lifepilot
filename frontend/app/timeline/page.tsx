@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import { getUserActions } from '../../lib/api';
 import styles from './timeline.module.css';
 
@@ -81,7 +83,29 @@ export default function Timeline() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Loading your timeline...</div>
+        <header className={styles.header}>
+          <Link href="/" className={styles.logoLink}>
+            <Image
+              src="/full name logo black.png"
+              alt="LifePilot"
+              width={180}
+              height={40}
+              className={styles.logoImage}
+              priority
+            />
+          </Link>
+          <nav className={styles.nav}>
+            <Link href="/timeline" className={styles.navLink}>
+              Timeline
+            </Link>
+            <Link href="/settings" className={styles.navLink}>
+              Settings
+            </Link>
+          </nav>
+        </header>
+        <main className={styles.main}>
+          <div className={styles.loading}>Loading your timeline...</div>
+        </main>
       </div>
     );
   }
@@ -89,15 +113,32 @@ export default function Timeline() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <h1>📜 Action Timeline</h1>
-          <button onClick={() => router.push('/')} className={styles.backButton}>
-            ← Dashboard
-          </button>
-        </div>
+        <Link href="/" className={styles.logoLink}>
+          <Image
+            src="/full name logo black.png"
+            alt="LifePilot"
+            width={180}
+            height={40}
+            className={styles.logoImage}
+            priority
+          />
+        </Link>
+        <nav className={styles.nav}>
+          <Link href="/timeline" className={styles.navLink}>
+            Timeline
+          </Link>
+          <Link href="/settings" className={styles.navLink}>
+            Settings
+          </Link>
+        </nav>
       </header>
 
       <main className={styles.main}>
+        <div className={styles.pageHeader}>
+          <h1>Timeline</h1>
+          <p className={styles.pageSubtitle}>View your action history and track progress</p>
+        </div>
+
         <div className={styles.controls}>
           <div className={styles.filterButtons}>
             <button

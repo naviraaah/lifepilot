@@ -166,10 +166,9 @@ font-family: var(--font-work-sans), 'Work Sans', -apple-system, BlinkMacSystemFo
 **Usage:** All text, UI elements, body content
 
 **Weights Used:**
-- 300 (Light) - Body text, descriptions, subtitles
-- 400 (Regular) - Standard UI elements, buttons
-- 500 (Medium) - Navigation, emphasis
-- 600 (Semi-Bold) - Headlines, page titles
+- 300 (Light) - Primary weight for all text, headings, body text, descriptions, subtitles, UI elements
+- 400 (Regular) - Only when 300 is not available or for minimal emphasis
+- 500+ (Medium/Bold) - Avoid unless absolutely necessary for critical emphasis
 
 #### Implementation
 ```typescript
@@ -184,19 +183,21 @@ const workSans = Work_Sans({
 
 **Typography Philosophy:** Work Sans Light (300) provides a modern, airy, and elegant feel that matches the Base44-inspired aesthetic. The lighter weight creates a more spacious and premium appearance while maintaining excellent readability.
 
+**Font Weight Rule:** Only use light (300) and thin font weights throughout the application. Avoid medium (500), semi-bold (600), and bold (700) weights except in rare cases where minimal emphasis is absolutely necessary. This ensures a consistent, modern, and subtle aesthetic across all UI elements.
+
 ### Type Scale
 
 | Element | Size | Weight | Line Height | Letter Spacing | Usage |
 |---------|------|--------|-------------|----------------|-------|
-| **Hero** | 48-64px | 700 | 1.1 | -0.02em | Landing pages, major headlines |
-| **H1** | 32-40px | 700 | 1.2 | -0.02em | Page titles |
-| **H2** | 24-28px | 600 | 1.3 | -0.01em | Section headers |
-| **H3** | 20-22px | 600 | 1.4 | 0 | Subsections |
-| **H4** | 18px | 600 | 1.4 | 0 | Card titles |
-| **Body Large** | 18px | 400 | 1.6 | 0 | Intro paragraphs, important text |
-| **Body** | 16px | 400 | 1.6 | 0 | Primary body text |
-| **Body Small** | 14px | 400 | 1.5 | 0 | Secondary info, captions |
-| **Caption** | 12px | 500 | 1.4 | 0.01em | Labels, metadata, timestamps |
+| **Hero** | 48-64px | 300 | 1.1 | -0.02em | Landing pages, major headlines |
+| **H1** | 32-40px | 300 | 1.2 | -0.02em | Page titles |
+| **H2** | 24-28px | 300 | 1.3 | -0.01em | Section headers |
+| **H3** | 20-22px | 300 | 1.4 | 0 | Subsections |
+| **H4** | 18px | 300 | 1.4 | 0 | Card titles |
+| **Body Large** | 18px | 300 | 1.6 | 0 | Intro paragraphs, important text |
+| **Body** | 16px | 300 | 1.6 | 0 | Primary body text |
+| **Body Small** | 14px | 300 | 1.5 | 0 | Secondary info, captions |
+| **Caption** | 12px | 300 | 1.4 | 0.01em | Labels, metadata, timestamps |
 
 ### Mobile Adjustments
 Reduce font sizes by 15-20% on screens < 768px:

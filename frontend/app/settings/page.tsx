@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import { getUser, updateUser, linkEmail, linkPhone } from '../../lib/api';
 import styles from './settings.module.css';
 
@@ -67,6 +69,26 @@ export default function Settings() {
   if (loading) {
     return (
       <div className={styles.container}>
+        <header className={styles.header}>
+          <Link href="/" className={styles.logoLink}>
+            <Image
+              src="/full name logo black.png"
+              alt="LifePilot"
+              width={180}
+              height={40}
+              className={styles.logoImage}
+              priority
+            />
+          </Link>
+          <nav className={styles.nav}>
+            <Link href="/timeline" className={styles.navLink}>
+              Timeline
+            </Link>
+            <Link href="/settings" className={styles.navLink}>
+              Settings
+            </Link>
+          </nav>
+        </header>
         <div className={styles.loading}>Loading settings...</div>
       </div>
     );
@@ -74,11 +96,26 @@ export default function Settings() {
 
   return (
     <div className={styles.container}>
-      <nav className={styles.nav}>
-        <button onClick={() => router.push('/')} className={styles.backButton}>
-          ← Back to Home
-        </button>
-      </nav>
+      <header className={styles.header}>
+        <Link href="/" className={styles.logoLink}>
+          <Image
+            src="/full name logo black.png"
+            alt="LifePilot"
+            width={180}
+            height={40}
+            className={styles.logoImage}
+            priority
+          />
+        </Link>
+        <nav className={styles.nav}>
+          <Link href="/timeline" className={styles.navLink}>
+            Timeline
+          </Link>
+          <Link href="/settings" className={styles.navLink}>
+            Settings
+          </Link>
+        </nav>
+      </header>
 
       <div className={styles.content}>
         <h1>Settings</h1>
