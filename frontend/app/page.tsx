@@ -84,7 +84,9 @@ export default function Home() {
   const [micPermissionRequested, setMicPermissionRequested] = useState(false);
   const [usedVoiceInput, setUsedVoiceInput] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [showAddMenu, setShowAddMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const addMenuRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const finalTranscriptRef = useRef<string>("");
@@ -158,13 +160,13 @@ export default function Home() {
       if (synthesisRef.current && !isSpeaking) {
         setIsSpeaking(true);
         const utterance = new SpeechSynthesisUtterance(responseText);
-        utterance.rate = 1.0;
+        utterance.rate = 1.1; // Slightly faster for more natural, ChatGPT-like feel
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
         utterance.onend = () => {
           setIsSpeaking(false);
-          // Resume listening after speaking
+          // Resume listening after speaking - faster transition for better flow
           if (isVoiceMode) {
             setTimeout(() => {
               if (recognitionRef.current && !isListening) {
@@ -174,7 +176,7 @@ export default function Home() {
                   console.error("Error restarting recognition:", error);
                 }
               }
-            }, 500);
+            }, 300); // Faster transition for more responsive feel
           }
         };
 
@@ -190,7 +192,7 @@ export default function Home() {
                   console.error("Error restarting recognition:", error);
                 }
               }
-            }, 500);
+            }, 300); // Faster transition
           }
         };
 
@@ -235,7 +237,7 @@ export default function Home() {
       if (synthesisRef.current && !isSpeaking) {
         setIsSpeaking(true);
         const utterance = new SpeechSynthesisUtterance(errorMessage);
-        utterance.rate = 1.0;
+        utterance.rate = 1.1; // Faster for more natural feel
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
@@ -250,7 +252,7 @@ export default function Home() {
                   console.error("Error restarting recognition:", error);
                 }
               }
-            }, 500);
+            }, 300); // Faster transition
           }
         };
 
@@ -424,8 +426,8 @@ export default function Home() {
     setTimeout(() => {
       if (synthesisRef.current) {
         setIsSpeaking(true);
-        const utterance = new SpeechSynthesisUtterance("I'm listening. Share your boring tasks.");
-        utterance.rate = 1.0;
+        const utterance = new SpeechSynthesisUtterance("Hey, I'm listening. What can I help you with?");
+        utterance.rate = 1.1; // Slightly faster for more natural feel
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
@@ -440,12 +442,12 @@ export default function Home() {
                 console.error("Error starting recognition:", error);
               }
             }
-          }, 300);
+          }, 200); // Faster transition
         };
 
         synthesisRef.current.speak(utterance);
       }
-    }, 300);
+    }, 200); // Faster start
   }, [micPermissionGranted, micPermissionRequested, requestMicrophonePermission]);
 
   // Toggle listening (for microphone button)
@@ -477,8 +479,28 @@ export default function Home() {
 
   // Handle attachment button click
   const handleAttachmentClick = useCallback(() => {
-    fileInputRef.current?.click();
+    setShowAddMenu((prev) => !prev);
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        addMenuRef.current &&
+        !addMenuRef.current.contains(event.target as Node) &&
+        !(event.target as HTMLElement).closest(`.${styles.attachButton}`)
+      ) {
+        setShowAddMenu(false);
+      }
+    };
+
+    if (showAddMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showAddMenu]);
 
   // Handle file selection
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -726,7 +748,7 @@ export default function Home() {
             />
             <span className={styles.navLabel}>Home</span>
           </Link>
-          <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
+          <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Overview">
             <svg
               width="24"
               height="24"
@@ -743,7 +765,7 @@ export default function Home() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span className={styles.navLabel}>Timeline</span>
+            <span className={styles.navLabel}>Overview</span>
           </Link>
           <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.navLinkActive : ''}`} aria-label="Settings">
             <Image
@@ -772,7 +794,7 @@ export default function Home() {
           />
           <span className={styles.bottomNavLabel}>Home</span>
         </Link>
-        <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
+        <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Overview">
           <svg
             width="24"
             height="24"
@@ -789,7 +811,7 @@ export default function Home() {
               strokeLinejoin="round"
             />
           </svg>
-          <span className={styles.bottomNavLabel}>Timeline</span>
+          <span className={styles.bottomNavLabel}>Overview</span>
         </Link>
         <Link href="/settings" className={`${styles.bottomNavLink} ${pathname === '/settings' ? styles.bottomNavLinkActive : ''}`} aria-label="Settings">
           <Image
@@ -904,11 +926,69 @@ export default function Home() {
                 />
               </svg>
             </button>
+            {showAddMenu && (
+              <div ref={addMenuRef} className={styles.addMenu}>
+                <div className={styles.addMenuPrompts}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickAction("Monitor and compare prices");
+                      setShowAddMenu(false);
+                    }}
+                    className={styles.addMenuPrompt}
+                    disabled={actionLoading}
+                  >
+                    <span className={styles.addMenuPromptText}>Monitoring and comparing prices</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickAction("Book an appointment");
+                      setShowAddMenu(false);
+                    }}
+                    className={styles.addMenuPrompt}
+                    disabled={actionLoading}
+                  >
+                    <span className={styles.addMenuPromptText}>Booking appointments</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickAction("Book a flight");
+                      setShowAddMenu(false);
+                    }}
+                    className={styles.addMenuPrompt}
+                    disabled={actionLoading}
+                  >
+                    <span className={styles.addMenuPromptText}>Booking a flight</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleQuickAction("Teach my friend to click a picture");
+                      setShowAddMenu(false);
+                    }}
+                    className={styles.addMenuPrompt}
+                    disabled={actionLoading}
+                  >
+                    <span className={styles.addMenuPromptText}>Teach my friend to click a picture</span>
+                  </button>
+                </div>
+              </div>
+            )}
             <input
               type="text"
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
+                // Stop listening if user types in voice mode
+                if (e.target.value && isListening && recognitionRef.current) {
+                  try {
+                    recognitionRef.current.stop();
+                  } catch (error) {
+                    console.error("Error stopping recognition:", error);
+                  }
+                }
                 // Reset voice input flag if user types manually
                 if (e.target.value && !isListening) {
                   setUsedVoiceInput(false);
@@ -973,16 +1053,17 @@ export default function Home() {
               )}
             </button>
             <button
-              type="submit"
+              type={input.trim() || isVoiceMode ? "submit" : "button"}
+              onClick={!input.trim() && !isVoiceMode && !actionLoading ? startVoiceMode : undefined}
               className={`${styles.submitButton} ${
-                input.trim() && !actionLoading ? styles.submitButtonEnabled : ""
+                (input.trim() || isVoiceMode) && !actionLoading ? styles.submitButtonEnabled : ""
               }`}
-              disabled={actionLoading || !input.trim()}
-              aria-label="Submit"
+              disabled={actionLoading}
+              aria-label={input.trim() || isVoiceMode ? "Submit" : "Start Voice AI mode"}
             >
               {actionLoading ? (
                 <span className={styles.spinner}>⏳</span>
-              ) : (
+              ) : input.trim() || isVoiceMode ? (
                 <Image
                   src="/LOGO White.png"
                   alt="Submit"
@@ -990,6 +1071,27 @@ export default function Home() {
                   height={20}
                   style={{ objectFit: 'contain' }}
                 />
+              ) : (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Sound wave / Audio equalizer icon - 11 bars with varying heights */}
+                  <rect x="1" y="12" width="1.2" height="4" rx="0.6" fill="currentColor"/>
+                  <rect x="2.8" y="10" width="1.2" height="8" rx="0.6" fill="currentColor"/>
+                  <rect x="4.6" y="13" width="1.2" height="2" rx="0.6" fill="currentColor"/>
+                  <rect x="6.4" y="6" width="1.2" height="14" rx="0.6" fill="currentColor"/>
+                  <rect x="8.2" y="9" width="1.2" height="8" rx="0.6" fill="currentColor"/>
+                  <rect x="10" y="4" width="1.2" height="16" rx="0.6" fill="currentColor"/>
+                  <rect x="11.8" y="9" width="1.2" height="8" rx="0.6" fill="currentColor"/>
+                  <rect x="13.6" y="6" width="1.2" height="14" rx="0.6" fill="currentColor"/>
+                  <rect x="15.4" y="13" width="1.2" height="2" rx="0.6" fill="currentColor"/>
+                  <rect x="17.2" y="10" width="1.2" height="8" rx="0.6" fill="currentColor"/>
+                  <rect x="18.8" y="12" width="1.2" height="4" rx="0.6" fill="currentColor"/>
+                </svg>
               )}
             </button>
             {attachments.length > 0 && (

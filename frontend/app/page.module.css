@@ -186,8 +186,8 @@
   left: 0.875rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(10px);
@@ -223,8 +223,8 @@
   right: 4rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(255, 146, 138, 0.1);
   backdrop-filter: blur(10px);
@@ -277,34 +277,44 @@
   right: 0.875rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(20, 20, 20, 0.5);
+  background: rgba(255, 193, 7, 0.1);
   backdrop-filter: blur(10px);
-  border: none;
-  color: white;
+  border: 1.5px solid rgba(255, 193, 7, 0.2);
+  color: #FFC107;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: not-allowed;
+  cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  opacity: 0.4;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+  z-index: 10;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: rgba(255, 193, 7, 0.4);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.25);
 }
 
 .submitButtonEnabled {
   background: rgba(20, 20, 20, 0.95) !important;
+  border: none !important;
+  color: white !important;
   opacity: 1 !important;
   cursor: pointer !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2) !important;
 }
 
-.submitButton:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 1);
-  transform: translateY(-50%) scale(1.05);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+.submitButtonEnabled:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 1) !important;
+  transform: translateY(-50%) scale(1.05) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
 }
+
 
 .submitButton:active:not(:disabled) {
   transform: translateY(-50%) scale(0.98);
@@ -383,6 +393,75 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Add Menu */
+.addMenu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  width: auto;
+  min-width: 200px;
+  max-width: 280px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(40px) saturate(180%);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0.5rem;
+  z-index: 1000;
+  animation: slideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.addMenuPrompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.addMenuPrompt {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  width: 100%;
+  color: var(--color-midnight);
+}
+
+.addMenuPrompt:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.addMenuPrompt:active:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.addMenuPrompt:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addMenuPromptText {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--color-midnight);
+  line-height: 1.4;
 }
 
 /* Quick Actions */
@@ -1008,20 +1087,20 @@
   }
 
   .attachButton {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     left: 0.625rem;
   }
 
   .micButton {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     right: 3.5rem;
   }
 
   .submitButton {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     right: 0.75rem;
     bottom: 0.75rem;
     top: auto;
@@ -1087,6 +1166,20 @@
     font-size: 0.9375rem;
     line-height: 1.4;
     font-weight: 400;
+  }
+
+  .addMenu {
+    min-width: 180px;
+    max-width: 240px;
+    padding: 0.5rem;
+  }
+
+  .addMenuPrompt {
+    padding: 0.5rem 0.625rem;
+  }
+
+  .addMenuPromptText {
+    font-size: 0.75rem;
   }
 }
 

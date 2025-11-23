@@ -152,7 +152,7 @@ export default function Settings() {
               />
               <span className={styles.navLabel}>Home</span>
             </Link>
-            <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
+            <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Overview">
               <svg
                 width="24"
                 height="24"
@@ -169,7 +169,7 @@ export default function Settings() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className={styles.navLabel}>Timeline</span>
+              <span className={styles.navLabel}>Overview</span>
             </Link>
             <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.navLinkActive : ''}`} aria-label="Settings">
               <Image
@@ -197,7 +197,7 @@ export default function Settings() {
             />
             <span className={styles.bottomNavLabel}>Home</span>
           </Link>
-          <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
+          <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Overview">
             <svg
               width="24"
               height="24"
@@ -214,7 +214,7 @@ export default function Settings() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span className={styles.bottomNavLabel}>Timeline</span>
+            <span className={styles.bottomNavLabel}>Overview</span>
           </Link>
           <Link href="/settings" className={`${styles.bottomNavLink} ${pathname === '/settings' ? styles.bottomNavLinkActive : ''}`} aria-label="Settings">
             <Image

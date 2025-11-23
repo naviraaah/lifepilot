@@ -107,7 +107,7 @@ export default function Timeline() {
               />
               <span className={styles.navLabel}>Home</span>
             </Link>
-            <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
+            <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Overview">
               <svg
                 width="24"
                 height="24"
@@ -124,7 +124,7 @@ export default function Timeline() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className={styles.navLabel}>Timeline</span>
+              <span className={styles.navLabel}>Overview</span>
             </Link>
             <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.navLinkActive : ''}`} aria-label="Settings">
               <Image
@@ -152,7 +152,7 @@ export default function Timeline() {
             />
             <span className={styles.bottomNavLabel}>Home</span>
           </Link>
-          <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
+          <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Overview">
             <svg
               width="24"
               height="24"
@@ -169,7 +169,7 @@ export default function Timeline() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span className={styles.bottomNavLabel}>Timeline</span>
+            <span className={styles.bottomNavLabel}>Overview</span>
           </Link>
           <Link href="/settings" className={`${styles.bottomNavLink} ${pathname === '/settings' ? styles.bottomNavLinkActive : ''}`} aria-label="Settings">
             <Image
@@ -295,7 +295,7 @@ export default function Timeline() {
 
       <main className={styles.main}>
         <div className={styles.pageHeader}>
-          <h1>Timeline</h1>
+          <h1>Overview</h1>
           <p className={styles.pageSubtitle}>View your action history and track progress</p>
         </div>
 
