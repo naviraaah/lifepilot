@@ -40,17 +40,29 @@
 
 .navLink {
   color: var(--color-midnight);
-  font-weight: 500;
+  font-weight: 300;
   font-size: 0.9375rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-full);
   letter-spacing: -0.015em;
   opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .navLink:hover {
   background: rgba(0, 0, 0, 0.05);
+  opacity: 1;
+}
+
+.navIcon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.navLink:hover .navIcon {
   opacity: 1;
 }
 
@@ -109,7 +121,7 @@
 
 .section h2 {
   font-size: 1.5rem;
-  font-weight: 500;
+  font-weight: 300;
   color: var(--color-black);
   margin-bottom: 1.5rem;
   letter-spacing: -0.01em;

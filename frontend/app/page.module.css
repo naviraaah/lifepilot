@@ -41,17 +41,29 @@
 
 .navLink {
   color: var(--color-midnight);
-  font-weight: 500;
+  font-weight: 300;
   font-size: 0.9375rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-full);
   letter-spacing: -0.015em;
   opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .navLink:hover {
   background: rgba(0, 0, 0, 0.05);
+  opacity: 1;
+}
+
+.navIcon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.navLink:hover .navIcon {
   opacity: 1;
 }
 
@@ -81,7 +93,7 @@
 }
 
 .greeting h1 {
-  font-size: clamp(48px, 6vw, 72px);
+  font-size: clamp(45px, 6vw, 69px);
   font-weight: 300;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -664,7 +676,7 @@
   }
 
   .greeting h1 {
-    font-size: clamp(32px, 9vw, 44px);
+    font-size: clamp(29px, 9vw, 41px);
     line-height: 1.2;
   }
 
@@ -736,20 +748,25 @@
   .quickActionPill {
     width: 100%;
     justify-content: flex-start;
-    padding: 1rem 1.25rem;
+    padding: 1rem 1.5rem;
     flex-direction: row;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.875rem;
     text-align: left;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .quickActionIcon {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    flex-shrink: 0;
   }
 
   .quickActionText {
-    font-size: 0.875rem;
-    line-height: 1.3;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    font-weight: 400;
   }
 }
 
@@ -776,7 +793,7 @@
   }
 
   .greeting h1 {
-    font-size: 32px;
+    font-size: 29px;
   }
 
   .greeting p {
@@ -801,8 +818,16 @@
   }
 
   .quickActionPill {
-    padding: 1rem 1.125rem;
     width: 100%;
+    padding: 0.75rem 1rem;
+  }
+
+  .quickActionIcon {
+    font-size: 1.125rem;
+  }
+
+  .quickActionText {
+    font-size: 0.8125rem;
   }
 }
 

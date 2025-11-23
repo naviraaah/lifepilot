@@ -47,10 +47,22 @@
   border-radius: var(--radius-full);
   letter-spacing: -0.015em;
   opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .navLink:hover {
   background: rgba(0, 0, 0, 0.05);
+  opacity: 1;
+}
+
+.navIcon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.navLink:hover .navIcon {
   opacity: 1;
 }
 
@@ -78,7 +90,7 @@
 .pageSubtitle {
   font-size: clamp(17px, 2vw, 20px);
   color: var(--color-midnight);
-  font-weight: 300;
+  font-weight: 400;
   opacity: 0.75;
   letter-spacing: 0;
   line-height: 1.6;
@@ -115,7 +127,7 @@
   border: 1.5px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   color: var(--color-black);
-  font-weight: 300;
+  font-weight: 400;
   font-size: 0.9375rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -133,7 +145,7 @@
   background: linear-gradient(135deg, #FF928A 0%, #FFBC9F 100%);
   border-color: transparent;
   color: white;
-  font-weight: 300;
+  font-weight: 400;
   opacity: 1;
   box-shadow: 0 2px 8px rgba(255, 146, 138, 0.3);
 }

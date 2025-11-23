@@ -564,11 +564,33 @@ export default function Home() {
           />
         </Link>
         <nav className={styles.nav}>
-          <Link href="/timeline" className={styles.navLink}>
-            Timeline
+          <Link href="/timeline" className={styles.navLink} aria-label="Timeline">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className={styles.navIcon}
+            >
+              <path
+                d="M3 4H17M3 8H17M3 12H13M3 16H9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
-          <Link href="/settings" className={styles.navLink}>
-            Settings
+          <Link href="/settings" className={styles.navLink} aria-label="Settings">
+            <Image
+              src="/Liam Persona.jpeg"
+              alt="Settings"
+              width={18}
+              height={18}
+              className={styles.navIcon}
+              style={{ borderRadius: '50%', objectFit: 'cover' }}
+            />
           </Link>
         </nav>
       </header>
