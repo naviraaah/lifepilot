@@ -1,0 +1,172 @@
+/* ✈️ LifePilot Design System - Global Styles */
+
+:root {
+  /* Primary Colors - Gradient Core */
+  --color-sunrise-coral: #FF928A;
+  --color-peach-glow: #FFBC9F;
+  --color-warm-dawn: #FFE8C2;
+  
+  /* Neutrals - Foundation */
+  --color-soft-sand: #F6F0EB;
+  --color-slate-gray: #3C3C3C;
+  --color-midnight: #141414;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  
+  /* Accent */
+  --color-pilot-red: #D40000;
+  
+  /* Functional Colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #FF928A 0%, #FFBC9F 50%, #FFE8C2 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(255, 146, 138, 0.1) 0%, rgba(255, 232, 194, 0.1) 100%);
+  --gradient-button: linear-gradient(135deg, #FF928A 0%, #FFBC9F 100%);
+  
+  /* Spacing Scale (8px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  
+  /* Typography */
+  --text-primary: #141414;
+  --text-secondary: #3C3C3C;
+  --text-tertiary: #6B7280;
+  
+  /* Legacy support */
+  --background: #ffffff;
+  --foreground: #141414;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-work-sans), 'Work Sans', -apple-system, BlinkMacSystemFont, 
+               'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  color: var(--text-primary);
+  background: var(--color-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-midnight);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+h1 { 
+  font-size: clamp(32px, 5vw, 40px); 
+  letter-spacing: -0.02em; 
+}
+
+h2 { 
+  font-size: clamp(24px, 4vw, 28px); 
+  letter-spacing: -0.01em; 
+}
+
+h3 { 
+  font-size: clamp(20px, 3vw, 22px); 
+}
+
+h4 { 
+  font-size: 18px; 
+}
+
+p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Focus Styles - Always visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-sunrise-coral);
+  outline-offset: 2px;
+}
+
+/* Text Selection */
+::selection {
+  background: var(--color-sunrise-coral);
+  color: white;
+}
+
+::-moz-selection {
+  background: var(--color-sunrise-coral);
+  color: white;
+}
+
+/* Utility Classes */
+.gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.gradient-subtle {
+  background: var(--gradient-subtle);
+}
+
+.gradient-button {
+  background: var(--gradient-button);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Smooth scroll behavior */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

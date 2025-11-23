@@ -1,0 +1,377 @@
+.container {
+  min-height: 100vh;
+  background: var(--color-white);
+}
+
+.nav {
+  background: var(--color-black);
+  padding: 1.5rem 2rem;
+}
+
+.backButton {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-md);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.content h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-midnight);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-bottom: 3rem;
+}
+
+.message {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+.message.success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid var(--color-error);
+  color: var(--color-error);
+}
+
+.section {
+  margin-bottom: 3rem;
+}
+
+.section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-midnight);
+  margin-bottom: 1rem;
+}
+
+.card {
+  background: var(--color-white);
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup:last-child {
+  margin-bottom: 0;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 600;
+  color: var(--color-midnight);
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--color-sunrise-coral);
+  box-shadow: 0 0 0 3px rgba(255, 146, 138, 0.1);
+}
+
+/* Trust Level */
+.trustDisplay {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.trustBadge {
+  padding: 1rem 2rem;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.trustInfo {
+  flex: 1;
+}
+
+.trustStat {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.trustValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-midnight);
+}
+
+.trustLabel {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.trustProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progressBar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--gradient-button);
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Preferences */
+.preference {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.preference:last-child {
+  border-bottom: none;
+}
+
+.preferenceInfo {
+  flex: 1;
+}
+
+.preferenceLabel {
+  font-weight: 600;
+  color: var(--color-midnight);
+  margin-bottom: 0.25rem;
+}
+
+.preferenceDescription {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d1d5db;
+  transition: 0.3s;
+  border-radius: 999px;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle input:checked + .toggleSlider {
+  background: var(--gradient-button);
+}
+
+.toggle input:checked + .toggleSlider:before {
+  transform: translateX(24px);
+}
+
+/* Integrations */
+.integration {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.integration:last-child {
+  border-bottom: none;
+}
+
+.integrationIcon {
+  font-size: 2rem;
+}
+
+.integrationInfo {
+  flex: 1;
+}
+
+.integrationName {
+  font-weight: 600;
+  color: var(--color-midnight);
+  margin-bottom: 0.25rem;
+}
+
+.integrationStatus {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.integrationButton {
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  border: 2px solid var(--color-black);
+  border-radius: var(--radius-md);
+  color: var(--color-black);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.integrationButton:hover:not(:disabled) {
+  background: var(--color-black);
+  color: white;
+}
+
+.integrationButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 3rem;
+}
+
+.saveButton {
+  flex: 1;
+  padding: 1rem;
+  background: var(--gradient-button);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(255, 146, 138, 0.3);
+}
+
+.saveButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 146, 138, 0.4);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 1rem 2rem;
+  background: transparent;
+  border: 2px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  border-color: var(--color-black);
+  color: var(--color-black);
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 2rem 1.5rem;
+  }
+
+  .content h1 {
+    font-size: 2rem;
+  }
+
+  .trustDisplay {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}
+
