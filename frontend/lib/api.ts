@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 45000, // 45 second timeout to allow for OpenAI API calls
 });
@@ -56,23 +56,37 @@ export interface Transaction {
 
 // Unified Agent endpoint - routes to appropriate agent automatically
 export const sendAgentRequest = async (
-  input: string, 
-  userId?: string, 
-  pollInterval?: number, 
+  input: string,
+  userId?: string,
+  pollInterval?: number,
   maxWaitTime?: number
 ): Promise<AgentResponse> => {
   try {
-    const response = await api.post('/api/agent', { 
-      input, 
-      userId, 
-      pollInterval, 
-      maxWaitTime 
+    const response = await api.post("/api/agent", {
+      input,
+      userId,
+      pollInterval,
+      maxWaitTime,
     });
     return response.data;
   } catch (error: any) {
+    // Handle network/connection errors
+    if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+      throw new Error(
+        "Unable to connect to the server. Please make sure the backend is running."
+      );
+    }
     // Handle timeout errors more gracefully
-    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-      throw new Error('The request is taking longer than expected. Please try again.');
+    if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+      throw new Error(
+        "The request is taking longer than expected. Please try again."
+      );
+    }
+    // If the backend returned an error response, preserve it
+    if (error.response?.data) {
+      // The backend already formatted the error, so we can throw it as-is
+      // This will be caught by the frontend error handler
+      throw error;
     }
     // Re-throw other errors
     throw error;
@@ -80,8 +94,10 @@ export const sendAgentRequest = async (
 };
 
 // Legacy agent endpoint (kept for backward compatibility)
-export const sendLegacyAgentRequest = async (input: string): Promise<AgentResponse> => {
-  const response = await api.post('/agent', { input });
+export const sendLegacyAgentRequest = async (
+  input: string
+): Promise<AgentResponse> => {
+  const response = await api.post("/agent", { input });
   return response.data;
 };
 
@@ -91,7 +107,7 @@ export const scheduleDentist = async (data: {
   preferredTime?: string;
   reason: string;
 }) => {
-  const response = await api.post('/api/schedule-dentist', data);
+  const response = await api.post("/api/schedule-dentist", data);
   return response.data;
 };
 
@@ -100,7 +116,7 @@ export const cancelSubscription = async (data: {
   subscriptionName: string;
   reason?: string;
 }) => {
-  const response = await api.post('/api/cancel-subscription', data);
+  const response = await api.post("/api/cancel-subscription", data);
   return response.data;
 };
 
@@ -110,23 +126,23 @@ export const disputeCharge = async (data: {
   amount: number;
   reason: string;
 }) => {
-  const response = await api.post('/api/dispute-charge', data);
+  const response = await api.post("/api/dispute-charge", data);
   return response.data;
 };
 
 // Get data
 export const getDentists = async (): Promise<Dentist[]> => {
-  const response = await api.get('/api/dentists');
+  const response = await api.get("/api/dentists");
   return response.data;
 };
 
 export const getSubscriptions = async (): Promise<Subscription[]> => {
-  const response = await api.get('/api/subscriptions');
+  const response = await api.get("/api/subscriptions");
   return response.data;
 };
 
 export const getTransactions = async (): Promise<Transaction[]> => {
-  const response = await api.get('/api/transactions');
+  const response = await api.get("/api/transactions");
   return response.data;
 };
 
@@ -145,7 +161,7 @@ export interface User {
     autoApproveAfterTraining: boolean;
     trainingRounds: number;
   };
-  trustLevel: 'new' | 'training' | 'trusted' | 'autonomous';
+  trustLevel: "new" | "training" | "trusted" | "autonomous";
   linkedAccounts: {
     email: { linked: boolean; provider: string | null };
     phone: { linked: boolean; verified: boolean };
@@ -155,8 +171,12 @@ export interface User {
   lastActive: string;
 }
 
-export const createUser = async (data: { email: string; phone?: string; name: string }): Promise<{ user: User; message: string }> => {
-  const response = await api.post('/api/users', data);
+export const createUser = async (data: {
+  email: string;
+  phone?: string;
+  name: string;
+}): Promise<{ user: User; message: string }> => {
+  const response = await api.post("/api/users", data);
   return response.data;
 };
 
@@ -165,7 +185,10 @@ export const getUser = async (userId: string): Promise<User> => {
   return response.data;
 };
 
-export const updateUser = async (userId: string, updates: Partial<User>): Promise<{ user: User; message: string }> => {
+export const updateUser = async (
+  userId: string,
+  updates: Partial<User>
+): Promise<{ user: User; message: string }> => {
   const response = await api.put(`/api/users/${userId}`, updates);
   return response.data;
 };
@@ -187,7 +210,13 @@ export interface ActionPlan {
 
 export interface ActionStatus {
   actionId: string;
-  status: 'pending_approval' | 'approved' | 'executing' | 'completed' | 'failed' | 'cancelled';
+  status:
+    | "pending_approval"
+    | "approved"
+    | "executing"
+    | "completed"
+    | "failed"
+    | "cancelled";
   type: string;
   plan: any[];
   executedSteps: any[];
@@ -197,18 +226,36 @@ export interface ActionStatus {
   feedback: any;
 }
 
-export const createActionPlan = async (userId: string, actionType: string, input: string): Promise<ActionPlan> => {
-  const response = await api.post('/api/agent', { userId, actionType, input });
+export const createActionPlan = async (
+  userId: string,
+  actionType: string,
+  input: string
+): Promise<ActionPlan> => {
+  const response = await api.post("/api/agent", { userId, actionType, input });
   return response.data;
 };
 
-export const approveAction = async (actionId: string, userId: string, modifications?: any) => {
-  const response = await api.post(`/api/actions/${actionId}/approve`, { userId, modifications });
+export const approveAction = async (
+  actionId: string,
+  userId: string,
+  modifications?: any
+) => {
+  const response = await api.post(`/api/actions/${actionId}/approve`, {
+    userId,
+    modifications,
+  });
   return response.data;
 };
 
-export const rejectAction = async (actionId: string, userId: string, reason: string) => {
-  const response = await api.post(`/api/actions/${actionId}/reject`, { userId, reason });
+export const rejectAction = async (
+  actionId: string,
+  userId: string,
+  reason: string
+) => {
+  const response = await api.post(`/api/actions/${actionId}/reject`, {
+    userId,
+    reason,
+  });
   return response.data;
 };
 
@@ -217,7 +264,10 @@ export const executeAction = async (actionId: string) => {
   return response.data;
 };
 
-export const getActionStatus = async (actionId: string, userId: string): Promise<ActionStatus> => {
+export const getActionStatus = async (
+  actionId: string,
+  userId: string
+): Promise<ActionStatus> => {
   const response = await api.get(`/api/actions/${actionId}?userId=${userId}`);
   return response.data;
 };
@@ -237,7 +287,7 @@ export const submitFeedback = async (data: {
   corrections?: any;
   mistakeType?: string;
 }) => {
-  const response = await api.post('/api/feedback', data);
+  const response = await api.post("/api/feedback", data);
   return response.data;
 };
 
@@ -263,7 +313,9 @@ export const analyzePatterns = async (userId: string) => {
 };
 
 export const getUpcomingReminders = async (userId: string, daysAhead = 30) => {
-  const response = await api.get(`/api/users/${userId}/reminders?daysAhead=${daysAhead}`);
+  const response = await api.get(
+    `/api/users/${userId}/reminders?daysAhead=${daysAhead}`
+  );
   return response.data;
 };
 
@@ -282,7 +334,7 @@ export const createMemory = async (data: {
   nextTrigger?: string;
   metadata?: any;
 }) => {
-  const response = await api.post('/api/memories', data);
+  const response = await api.post("/api/memories", data);
   return response.data;
 };
 
@@ -291,14 +343,28 @@ export const getUserMemories = async (userId: string) => {
   return response.data;
 };
 
-export const updateMemory = async (memoryId: string, userId: string, updates: any) => {
-  const response = await api.put(`/api/memories/${memoryId}`, { userId, ...updates });
+export const updateMemory = async (
+  memoryId: string,
+  userId: string,
+  updates: any
+) => {
+  const response = await api.put(`/api/memories/${memoryId}`, {
+    userId,
+    ...updates,
+  });
   return response.data;
 };
 
 // Integration
-export const linkEmail = async (userId: string, email: string, provider: string) => {
-  const response = await api.post(`/api/users/${userId}/link-email`, { email, provider });
+export const linkEmail = async (
+  userId: string,
+  email: string,
+  provider: string
+) => {
+  const response = await api.post(`/api/users/${userId}/link-email`, {
+    email,
+    provider,
+  });
   return response.data;
 };
 
@@ -308,6 +374,8 @@ export const linkPhone = async (userId: string, phone: string) => {
 };
 
 export const verifyPhone = async (userId: string, code: string) => {
-  const response = await api.post(`/api/users/${userId}/verify-phone`, { code });
+  const response = await api.post(`/api/users/${userId}/verify-phone`, {
+    code,
+  });
   return response.data;
 };
