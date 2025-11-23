@@ -1,1 +1,43 @@
-[]
+[
+  {
+    "id": "mem_1763920447280_aamph6oo7",
+    "userId": "demo_user_123",
+    "type": "preference",
+    "category": "personal_info",
+    "title": "Liam's Personal Information",
+    "description": "Liam stays in Sunnyvale, California and works for a tech company, Apple. He goes to New York City to meet his girlfriend for Thanksgiving and his birthday weekend in February. He also likes to gym a lot. Because he lives in Sunnyvale, there are so many good food options in downtown Sunnyvale. He also likes to hang out in SF near the North Beach area, that's where he spends most of his time. He likes to go out, eat food, and play games.\n\nHe usually visits his family for Thanksgiving. He has four family members: his parents, his brother, and his brother's wife (his sister-in-law). So, he usually needs to buy four Thanksgiving gifts. Typically, two gifts are for men (his father and brother), and two are for women (his mother and sister-in-law).\n\nLiam is recently getting a lot of dental issues and needs to book an appointment with the dentist very soon. He wants to book it near his place in Sunnyvale only, so that it's convenient for him. He also works from the Sunnyvale Apple office, so it's easier for him to get all his appointments and schedules around Sunnyvale.",
+    "pattern": {},
+    "triggers": [],
+    "metadata": {
+      "location": "Sunnyvale, California",
+      "workplace": "Apple",
+      "frequentLocations": [
+        "Sunnyvale",
+        "San Francisco - North Beach"
+      ],
+      "interests": [
+        "gym",
+        "food",
+        "games"
+      ],
+      "family": {
+        "members": 4,
+        "thanksgivingGifts": {
+          "men": 2,
+          "women": 2
+        }
+      },
+      "preferences": {
+        "appointments": "Sunnyvale area",
+        "dentalIssues": true
+      }
+    },
+    "confidence": 1,
+    "occurrences": 1,
+    "lastTriggered": null,
+    "nextTrigger": null,
+    "active": true,
+    "createdAt": "2025-11-23T17:54:07.280Z",
+    "updatedAt": "2025-11-23T17:54:07.280Z"
+  }
+]

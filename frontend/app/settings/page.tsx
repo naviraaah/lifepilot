@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getUser, updateUser, linkEmail, linkPhone } from '../../lib/api';
+import { getUser, updateUser, linkEmail, linkPhone, getUserMemories, createMemory, updateMemory } from '../../lib/api';
 import styles from './settings.module.css';
 
 export default function Settings() {
@@ -33,6 +33,8 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [memories, setMemories] = useState<any[]>([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(false);
 
   const initialFormData = {
     name: 'Liam',
@@ -50,6 +52,7 @@ export default function Settings() {
 
   useEffect(() => {
     loadUser();
+    loadMemories();
   }, []);
 
   // Check if form has changes
@@ -72,8 +75,9 @@ export default function Settings() {
       };
       setFormData(loadedFormData);
       setOriginalFormData(loadedFormData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading user:', error);
+      // If 404, the backend should create the user, but if it doesn't, use defaults
       // Set default Liam dummy data if API fails
       const defaultUser = {
         id: userId,
@@ -102,8 +106,121 @@ export default function Settings() {
       };
       setFormData(defaultFormData);
       setOriginalFormData(defaultFormData);
+      
+      // Try to create the user on the backend if it doesn't exist
+      if (error.response?.status === 404) {
+        try {
+          // The backend should auto-create, but if not, we'll just use the defaults
+          // The user will be created on first API call that requires it
+        } catch (createError) {
+          console.error('Error creating user:', createError);
+        }
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMemories = async () => {
+    try {
+      setMemoriesLoading(true);
+      const memoriesData = await getUserMemories(userId);
+      
+      // The API returns { count, memories: [...] }
+      // Ensure memories is always an array
+      let memoriesArray: any[] = [];
+      if (Array.isArray(memoriesData)) {
+        memoriesArray = memoriesData;
+      } else if (memoriesData && Array.isArray(memoriesData.memories)) {
+        memoriesArray = memoriesData.memories;
+      } else if (memoriesData && memoriesData.data && Array.isArray(memoriesData.data)) {
+        memoriesArray = memoriesData.data;
+      }
+      
+      setMemories(memoriesArray);
+      
+      // If no memories exist, create the default Liam memory
+      if (memoriesArray.length === 0) {
+        await createLiamMemory();
+      }
+    } catch (error) {
+      console.error('Error loading memories:', error);
+      // Set empty array on error and try to create default memory
+      setMemories([]);
+      await createLiamMemory();
+    } finally {
+      setMemoriesLoading(false);
+    }
+  };
+
+  const createLiamMemory = async () => {
+    try {
+      // Check if Liam's memory already exists
+      const existingMemories = await getUserMemories(userId);
+      const memoriesArray = Array.isArray(existingMemories) 
+        ? existingMemories 
+        : (existingMemories?.memories || []);
+      
+      const liamMemoryExists = memoriesArray.some(
+        (m: any) => m.title === "Liam's Personal Information" || m.category === 'personal_info'
+      );
+      
+      if (liamMemoryExists) {
+        // Reload memories if it already exists
+        setMemories(memoriesArray);
+        return;
+      }
+      
+      const liamMemory = {
+        userId,
+        type: 'preference',
+        category: 'personal_info',
+        title: "Liam's Personal Information",
+        description: `Liam stays in Sunnyvale, California and works for a tech company, Apple. He goes to New York City to meet his girlfriend for Thanksgiving and his birthday weekend in February. He also likes to gym a lot. Because he lives in Sunnyvale, there are so many good food options in downtown Sunnyvale. He also likes to hang out in SF near the North Beach area, that's where he spends most of his time. He likes to go out, eat food, and play games.
+
+He usually visits his family for Thanksgiving. He has four family members: his parents, his brother, and his brother's wife (his sister-in-law). So, he usually needs to buy four Thanksgiving gifts. Typically, two gifts are for men (his father and brother), and two are for women (his mother and sister-in-law).
+
+Liam is recently getting a lot of dental issues and needs to book an appointment with the dentist very soon. He wants to book it near his place in Sunnyvale only, so that it's convenient for him. He also works from the Sunnyvale Apple office, so it's easier for him to get all his appointments and schedules around Sunnyvale.`,
+        metadata: {
+          location: 'Sunnyvale, California',
+          workplace: 'Apple',
+          frequentLocations: ['Sunnyvale', 'San Francisco - North Beach'],
+          interests: ['gym', 'food', 'games'],
+          family: {
+            members: 4,
+            thanksgivingGifts: {
+              men: 2,
+              women: 2
+            }
+          },
+          preferences: {
+            appointments: 'Sunnyvale area',
+            dentalIssues: true
+          }
+        }
+      };
+      
+      const result = await createMemory(liamMemory);
+      
+      // Reload memories after creating
+      const updatedMemories = await getUserMemories(userId);
+      const updatedArray = Array.isArray(updatedMemories) 
+        ? updatedMemories 
+        : (updatedMemories?.memories || []);
+      setMemories(updatedArray);
+    } catch (error) {
+      console.error('Error creating Liam memory:', error);
+      // On error, still try to load existing memories
+      try {
+        const existingMemories = await getUserMemories(userId);
+        const memoriesArray = Array.isArray(existingMemories) 
+          ? existingMemories 
+          : (existingMemories?.memories || []);
+        setMemories(memoriesArray);
+      } catch (loadError) {
+        console.error('Error loading memories after create failure:', loadError);
+        setMemories([]);
+      }
     }
   };
 
@@ -382,37 +499,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Trust Level */}
-        <div className={styles.section}>
-          <h2>Trust Level</h2>
-          <div className={styles.card}>
-            <div className={styles.trustDisplay}>
-              <div className={styles.trustBadge} style={{ backgroundColor: getTrustColor(user?.trustLevel) }}>
-                {getTrustLabel(user?.trustLevel)}
-              </div>
-              <div className={styles.trustInfo}>
-                <div className={styles.trustStat}>
-                  <span className={styles.trustValue}>{user?.preferences?.trainingRounds || 0}</span>
-                  <span className={styles.trustLabel}>Successful Actions</span>
-                </div>
-                <div className={styles.trustProgress}>
-                  <div className={styles.progressBar}>
-                    <div 
-                      className={styles.progressFill}
-                      style={{ width: `${Math.min((user?.preferences?.trainingRounds || 0) / 10 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <span className={styles.progressText}>
-                    {10 - (user?.preferences?.trainingRounds || 0) > 0 
-                      ? `${10 - (user?.preferences?.trainingRounds || 0)} more to Autonomous`
-                      : 'Autonomous Mode!'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Preferences */}
         <div className={styles.section}>
           <h2>Preferences</h2>
@@ -476,6 +562,78 @@ export default function Settings() {
                 <span className={styles.toggleSlider}></span>
               </label>
             </div>
+          </div>
+        </div>
+
+        {/* Personalization */}
+        <div className={styles.section}>
+          <h2>Personalization</h2>
+          <p className={styles.sectionDescription}>
+            Store personal information and preferences to help LifePilot provide more customized and personalized suggestions.
+          </p>
+          <div className={styles.card}>
+            {memoriesLoading ? (
+              <div className={styles.loading}>Loading memories...</div>
+            ) : memories.length === 0 ? (
+              <div className={styles.emptyMemories}>
+                <p>No memories stored yet. LifePilot will learn your preferences over time.</p>
+              </div>
+            ) : Array.isArray(memories) && memories.length > 0 ? (
+              <div className={styles.memoriesList}>
+                {memories.map((memory) => (
+                  <div key={memory.id} className={styles.memoryItem}>
+                    <div className={styles.memoryHeader}>
+                      <div className={styles.memoryTitle}>{memory.title}</div>
+                      <div className={styles.memoryCategory}>{memory.category}</div>
+                    </div>
+                    <div className={styles.memoryDescription}>{memory.description}</div>
+                    {memory.metadata && Object.keys(memory.metadata).length > 0 && (
+                      <div className={styles.memoryMetadata}>
+                        <div className={styles.metadataTitle}>Key Details:</div>
+                        <div className={styles.metadataContent}>
+                          {memory.metadata.location && (
+                            <div className={styles.metadataItem}>
+                              <span className={styles.metadataLabel}>Location:</span>
+                              <span className={styles.metadataValue}>{memory.metadata.location}</span>
+                            </div>
+                          )}
+                          {memory.metadata.workplace && (
+                            <div className={styles.metadataItem}>
+                              <span className={styles.metadataLabel}>Workplace:</span>
+                              <span className={styles.metadataValue}>{memory.metadata.workplace}</span>
+                            </div>
+                          )}
+                          {memory.metadata.frequentLocations && (
+                            <div className={styles.metadataItem}>
+                              <span className={styles.metadataLabel}>Frequent Locations:</span>
+                              <span className={styles.metadataValue}>
+                                {Array.isArray(memory.metadata.frequentLocations)
+                                  ? memory.metadata.frequentLocations.join(', ')
+                                  : memory.metadata.frequentLocations}
+                              </span>
+                            </div>
+                          )}
+                          {memory.metadata.interests && (
+                            <div className={styles.metadataItem}>
+                              <span className={styles.metadataLabel}>Interests:</span>
+                              <span className={styles.metadataValue}>
+                                {Array.isArray(memory.metadata.interests)
+                                  ? memory.metadata.interests.join(', ')
+                                  : memory.metadata.interests}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyMemories}>
+                <p>No memories stored yet. LifePilot will learn your preferences over time.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -554,58 +712,5 @@ export default function Settings() {
       </div>
     </div>
   );
-}
-
-function getTrustColor(level: string) {
-  switch (level) {
-    case 'autonomous': return '#10b981';
-    case 'trusted': return '#3b82f6';
-    case 'training': return '#f59e0b';
-    default: return '#6b7280';
-  }
-}
-
-function getTrustLabel(level: string) {
-  switch (level) {
-    case 'autonomous': 
-      return (
-        <>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          Autonomous
-        </>
-      );
-    case 'trusted': 
-      return (
-        <>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          Trusted
-        </>
-      );
-    case 'training': 
-      return (
-        <>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
-          Training
-        </>
-      );
-    default: 
-      return (
-        <>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-            <circle cx="12" cy="10" r="3"/>
-          </svg>
-          New
-        </>
-      );
-  }
 }
 

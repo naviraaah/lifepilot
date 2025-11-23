@@ -321,9 +321,11 @@
 }
 
 .submitButton:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: rgba(20, 20, 20, 0.5);
+  opacity: 0.5;
+  background: rgba(200, 200, 200, 0.3) !important;
+  border-color: rgba(200, 200, 200, 0.2) !important;
+  color: rgba(150, 150, 150, 0.6) !important;
+  cursor: not-allowed !important;
 }
 
 .attachmentsList {

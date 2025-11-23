@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getUserActions } from '../../lib/api';
+import { getUserActions, getActionStatus, getUser } from '../../lib/api';
 import styles from './timeline.module.css';
 
 export default function Timeline() {
@@ -15,9 +15,14 @@ export default function Timeline() {
   const [actions, setActions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<any>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     loadTimeline();
+    loadUser();
   }, []);
 
   const loadTimeline = async () => {
@@ -29,6 +34,23 @@ export default function Timeline() {
       console.error('Error loading timeline:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUser = async () => {
+    try {
+      const userData = await getUser(userId);
+      setUser(userData);
+    } catch (error) {
+      console.error('Error loading user:', error);
+      // Set default user data if API fails
+      setUser({
+        id: userId,
+        preferences: {
+          trainingRounds: 8
+        },
+        trustLevel: 'training'
+      });
     }
   };
 
@@ -78,6 +100,87 @@ export default function Timeline() {
         day: 'numeric', 
         year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined 
       });
+    }
+  };
+
+  const handleViewDetails = async (actionId: string) => {
+    setSelectedActionId(actionId);
+    setActionLoading(true);
+    try {
+      const data = await getActionStatus(actionId, userId);
+      setSelectedAction(data);
+    } catch (error) {
+      console.error('Error loading action details:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedActionId(null);
+    setSelectedAction(null);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return '#10B981';
+      case 'pending_approval': return '#F59E0B';
+      case 'executing': return '#3B82F6';
+      case 'failed': return '#EF4444';
+      default: return '#6B7280';
+    }
+  };
+
+  const getTrustColor = (level: string) => {
+    switch (level) {
+      case 'autonomous': return '#10b981';
+      case 'trusted': return '#3b82f6';
+      case 'training': return '#f59e0b';
+      default: return '#6b7280';
+    }
+  };
+
+  const getTrustLabel = (level: string) => {
+    switch (level) {
+      case 'autonomous': 
+        return (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Autonomous
+          </>
+        );
+      case 'trusted': 
+        return (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Trusted
+          </>
+        );
+      case 'training': 
+        return (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+            Training
+          </>
+        );
+      default: 
+        return (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }}>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            New
+          </>
+        );
     }
   };
 
@@ -293,11 +396,12 @@ export default function Timeline() {
         </Link>
       </nav>
 
-      <main className={styles.main}>
-        <div className={styles.pageHeader}>
-          <h1>Overview</h1>
-          <p className={styles.pageSubtitle}>View your action history and track progress</p>
-        </div>
+      <main className={`${styles.main} ${selectedActionId ? styles.mainSplit : ''}`}>
+        <div className={styles.leftPanel}>
+          <div className={styles.pageHeader}>
+            <h1>Overview</h1>
+            <p className={styles.pageSubtitle}>View your action history and track progress</p>
+          </div>
 
         <div className={styles.controls}>
           <div className={styles.filterButtons}>
@@ -343,6 +447,46 @@ export default function Timeline() {
               <span className={styles.statLabel}>Success Rate</span>
             </div>
           </div>
+
+          {/* Trust Level Card */}
+          {user && (
+            <div className={styles.trustLevelCard}>
+              <div className={styles.trustLevelHeader}>
+                <h3 className={styles.trustLevelTitle}>Trust Level</h3>
+              </div>
+              <div className={styles.trustDisplay}>
+                <div 
+                  className={styles.trustBadge} 
+                  style={{ backgroundColor: getTrustColor(user?.trustLevel) }}
+                >
+                  {getTrustLabel(user?.trustLevel)}
+                </div>
+                <div className={styles.trustInfo}>
+                  <div className={styles.trustStat}>
+                    <span className={styles.trustValue}>
+                      {user?.preferences?.trainingRounds || 0}
+                    </span>
+                    <span className={styles.trustLabel}>Successful Actions</span>
+                  </div>
+                  <div className={styles.trustProgress}>
+                    <div className={styles.progressBar}>
+                      <div 
+                        className={styles.progressFill}
+                        style={{ 
+                          width: `${Math.min((user?.preferences?.trainingRounds || 0) / 10 * 100, 100)}%` 
+                        }}
+                      ></div>
+                    </div>
+                    <span className={styles.progressText}>
+                      {10 - (user?.preferences?.trainingRounds || 0) > 0 
+                        ? `${10 - (user?.preferences?.trainingRounds || 0)} more to Autonomous`
+                        : 'Autonomous Mode!'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {filteredActions.length === 0 ? (
@@ -401,7 +545,7 @@ export default function Timeline() {
                         </button>
                       )}
                       <button
-                        onClick={() => router.push(`/actions/${action.id}`)}
+                        onClick={() => handleViewDetails(action.id)}
                         className={styles.detailsButton}
                       >
                         View Details
@@ -422,6 +566,225 @@ export default function Timeline() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        </div>
+
+        {/* Detail Panel */}
+        {selectedActionId && (
+          <div className={styles.rightPanel}>
+            <div className={styles.panelHeader}>
+              <h2>Action Details</h2>
+              <button
+                onClick={handleCloseDetails}
+                className={styles.closeButton}
+                aria-label="Close details"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M15 5L5 15M5 5L15 15"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className={styles.panelContent}>
+              {actionLoading ? (
+                <div className={styles.loading}>Loading action details...</div>
+              ) : selectedAction ? (
+                <>
+                  {/* Header */}
+                  <div className={styles.detailHeader}>
+                    <div className={styles.detailHeaderLeft}>
+                      <div className={styles.detailIcon}>
+                        {getActionIcon(selectedAction.type)}
+                      </div>
+                      <div>
+                        <h1 className={styles.detailTitle}>
+                          {selectedAction.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </h1>
+                        <p className={styles.detailSubtitle}>
+                          {selectedAction.input || 'No input provided'}
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className={styles.detailStatusBadge}
+                      style={{
+                        backgroundColor: `${getStatusColor(selectedAction.status)}20`,
+                        color: getStatusColor(selectedAction.status),
+                      }}
+                    >
+                      {selectedAction.status.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </div>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className={styles.detailSection}>
+                    <h2>Action Timeline</h2>
+                    <div className={styles.detailTimeline}>
+                      <div className={styles.detailTimelineItem}>
+                        <div className={styles.detailTimelineDot}></div>
+                        <div className={styles.detailTimelineContent}>
+                          <div className={styles.detailTimelineTitle}>Request Received</div>
+                          <div className={styles.detailTimelineDate}>
+                            {new Date(selectedAction.createdAt).toLocaleString()}
+                          </div>
+                          <div className={styles.detailTimelineDescription}>
+                            User requested: "{selectedAction.input}"
+                          </div>
+                        </div>
+                      </div>
+
+                      {selectedAction.plan && selectedAction.plan.length > 0 && (
+                        <div className={styles.detailTimelineItem}>
+                          <div className={styles.detailTimelineDot}></div>
+                          <div className={styles.detailTimelineContent}>
+                            <div className={styles.detailTimelineTitle}>Plan Generated</div>
+                            <div className={styles.detailTimelineDescription}>
+                              Created {selectedAction.plan.length}-step action plan
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedAction.approvedAt && (
+                        <div className={styles.detailTimelineItem}>
+                          <div className={styles.detailTimelineDot}></div>
+                          <div className={styles.detailTimelineContent}>
+                            <div className={styles.detailTimelineTitle}>Approved</div>
+                            <div className={styles.detailTimelineDate}>
+                              {new Date(selectedAction.approvedAt).toLocaleString()}
+                            </div>
+                            <div className={styles.detailTimelineDescription}>
+                              User approved the action plan
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedAction.status === 'executing' && (
+                        <div className={styles.detailTimelineItem}>
+                          <div className={`${styles.detailTimelineDot} ${styles.pulsing}`}></div>
+                          <div className={styles.detailTimelineContent}>
+                            <div className={styles.detailTimelineTitle}>Executing</div>
+                            <div className={styles.detailTimelineDescription}>
+                              Action in progress...
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedAction.completedAt && (
+                        <div className={styles.detailTimelineItem}>
+                          <div className={styles.detailTimelineDot}></div>
+                          <div className={styles.detailTimelineContent}>
+                            <div className={styles.detailTimelineTitle}>Completed</div>
+                            <div className={styles.detailTimelineDate}>
+                              {new Date(selectedAction.completedAt).toLocaleString()}
+                            </div>
+                            <div className={styles.detailTimelineDescription}>
+                              Action successfully completed
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Plan Details */}
+                  {selectedAction.plan && selectedAction.plan.length > 0 && (
+                    <div className={styles.detailSection}>
+                      <h2>Action Plan</h2>
+                      <div className={styles.detailPlanSteps}>
+                        {selectedAction.plan.map((step: any, idx: number) => (
+                          <div key={idx} className={styles.detailPlanStep}>
+                            <div className={styles.detailStepNumber}>
+                              {step.number || idx + 1}
+                            </div>
+                            <div className={styles.detailStepContent}>
+                              <div className={styles.detailStepTitle}>
+                                {step.description}
+                              </div>
+                              {step.details && (
+                                <div className={styles.detailStepDetails}>
+                                  {step.details}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Result */}
+                  {selectedAction.result && (
+                    <div className={styles.detailSection}>
+                      <h2>Result</h2>
+                      <div className={styles.detailResultCard}>
+                        {selectedAction.result.success && (
+                          <div className={styles.detailSuccessIcon}>✓</div>
+                        )}
+                        <div className={styles.detailResultMessage}>
+                          {selectedAction.result.message}
+                        </div>
+                        {selectedAction.result.details && (
+                          <div className={styles.detailResultDetails}>
+                            <pre>
+                              {JSON.stringify(selectedAction.result.details, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Feedback */}
+                  {selectedAction.feedback ? (
+                    <div className={styles.detailSection}>
+                      <h2>Your Feedback</h2>
+                      <div className={styles.detailFeedbackCard}>
+                        <div className={styles.detailRating}>
+                          {'⭐'.repeat(selectedAction.feedback.rating)}
+                        </div>
+                        <div className={styles.detailFeedbackStatus}>
+                          {selectedAction.feedback.wasCorrect
+                            ? '✓ Correct'
+                            : '✗ Needs Improvement'}
+                        </div>
+                        {selectedAction.feedback.comment && (
+                          <div className={styles.detailFeedbackComment}>
+                            "{selectedAction.feedback.comment}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : selectedAction.status === 'completed' && (
+                    <div className={styles.detailSection}>
+                      <button
+                        onClick={() => router.push(`/feedback?actionId=${selectedActionId}`)}
+                        className={styles.detailFeedbackButton}
+                      >
+                        Provide Feedback ⭐
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className={styles.error}>Action not found</div>
+              )}
+            </div>
           </div>
         )}
       </main>

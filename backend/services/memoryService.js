@@ -105,7 +105,8 @@ class MemoryService {
         nextTrigger: m.nextTrigger,
         confidence: m.confidence,
         occurrences: m.occurrences,
-        active: m.active
+        active: m.active,
+        metadata: m.metadata || {}
       }))
     };
   }

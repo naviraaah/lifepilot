@@ -1131,9 +1131,7 @@ export default function Home() {
               disabled={actionLoading}
               aria-label={input.trim() || isVoiceMode ? "Submit" : "Start Voice AI mode"}
             >
-              {actionLoading ? (
-                <span className={styles.spinner}>⏳</span>
-              ) : input.trim() || isVoiceMode ? (
+              {input.trim() || isVoiceMode ? (
                 <Image
                   src="/LOGO White.png"
                   alt="Submit"
