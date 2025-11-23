@@ -925,6 +925,16 @@ export default function Home() {
                   <span className={styles.quickActionIcon}>📺</span>
                   <span className={styles.quickActionText}>Cancel Netflix</span>
                 </button>
+                <button
+                  onClick={() =>
+                    handleQuickAction("Add DCS to my account")
+                  }
+                  className={styles.quickActionPill}
+                  disabled={actionLoading}
+                >
+                  <span className={styles.quickActionIcon}>➕</span>
+                  <span className={styles.quickActionText}>Add DCS</span>
+                </button>
               </div>
             </div>
           )}
