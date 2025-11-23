@@ -1,14 +1,16 @@
 {
-  "name": "backend",
+  "name": "lifepilot-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "LifePilot Backend - Autonomous Life Admin Agent",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["ai", "agent", "automation", "life-admin"],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.13.2",
@@ -16,5 +18,8 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "openai": "^6.9.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }
