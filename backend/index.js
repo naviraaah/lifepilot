@@ -203,6 +203,54 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
+app.get('/api/users/:userId', async (req, res) => {
+  try {
+    let user = User.findById(req.params.userId);
+    if (!user) {
+      // Create a default user with Liam's data if it doesn't exist
+      user = User.create({
+        id: req.params.userId,
+        email: 'liam.anderson@email.com',
+        name: 'Liam',
+        phone: '+1 (415) 555-7890',
+        preferences: {
+          timezone: 'America/Los_Angeles',
+          notificationEmail: true,
+          notificationSMS: true,
+          autoApproveAfterTraining: false,
+          trainingRounds: 8
+        },
+        trustLevel: 'training',
+        linkedAccounts: {
+          email: { linked: true, provider: 'Gmail' },
+          phone: { linked: true, verified: true },
+          calendar: { linked: false, provider: null }
+        },
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+        lastActive: new Date().toISOString()
+      });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:userId', async (req, res) => {
+  try {
+    const updates = req.body;
+    const user = User.update(req.params.userId, updates);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ user, message: 'User updated successfully' });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/book-appointment', async (req, res) => {
   try {
     const { appointmentType, preferences, pollInterval, maxWaitTime } = req.body;

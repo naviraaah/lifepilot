@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getUserActions } from '../../lib/api';
@@ -9,6 +9,7 @@ import styles from './timeline.module.css';
 
 export default function Timeline() {
   const router = useRouter();
+  const pathname = usePathname();
   const userId = 'demo_user_123'; // In production, get from auth
 
   const [actions, setActions] = useState<any[]>([]);
@@ -95,10 +96,21 @@ export default function Timeline() {
             />
           </Link>
           <nav className={styles.nav}>
-            <Link href="/timeline" className={styles.navLink} aria-label="Timeline">
+            <Link href="/" className={`${styles.navLink} ${pathname === '/' ? styles.navLinkActive : ''}`} aria-label="Home">
+              <Image
+                src="/LOGO black.png"
+                alt="Home"
+                width={24}
+                height={24}
+                className={styles.navIcon}
+                style={{ objectFit: 'contain' }}
+              />
+              <span className={styles.navLabel}>Home</span>
+            </Link>
+            <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
               <svg
-                width="18"
-                height="18"
+                width="24"
+                height="24"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -112,19 +124,65 @@ export default function Timeline() {
                   strokeLinejoin="round"
                 />
               </svg>
+              <span className={styles.navLabel}>Timeline</span>
             </Link>
-            <Link href="/settings" className={styles.navLink} aria-label="Settings">
+            <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.navLinkActive : ''}`} aria-label="Settings">
               <Image
                 src="/Liam Persona.jpeg"
                 alt="Settings"
-                width={18}
-                height={18}
+                width={24}
+                height={24}
                 className={styles.navIcon}
                 style={{ borderRadius: '50%', objectFit: 'cover' }}
               />
+              <span className={styles.navLabel}>Settings</span>
             </Link>
           </nav>
         </header>
+        {/* Bottom Navbar - Mobile Only */}
+        <nav className={styles.bottomNav}>
+          <Link href="/" className={`${styles.bottomNavLink} ${pathname === '/' ? styles.bottomNavLinkActive : ''}`} aria-label="Home">
+            <Image
+              src="/LOGO black.png"
+              alt="Home"
+              width={24}
+              height={24}
+              className={styles.bottomNavIcon}
+              style={{ objectFit: 'contain' }}
+            />
+            <span className={styles.bottomNavLabel}>Home</span>
+          </Link>
+          <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className={styles.bottomNavIcon}
+            >
+              <path
+                d="M3 4H17M3 8H17M3 12H13M3 16H9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className={styles.bottomNavLabel}>Timeline</span>
+          </Link>
+          <Link href="/settings" className={`${styles.bottomNavLink} ${pathname === '/settings' ? styles.bottomNavLinkActive : ''}`} aria-label="Settings">
+            <Image
+              src="/Liam Persona.jpeg"
+              alt="Settings"
+              width={24}
+              height={24}
+              className={styles.bottomNavIcon}
+              style={{ borderRadius: '50%', objectFit: 'cover' }}
+            />
+            <span className={styles.bottomNavLabel}>Settings</span>
+          </Link>
+        </nav>
         <main className={styles.main}>
           <div className={styles.loading}>Loading your timeline...</div>
         </main>
@@ -146,10 +204,21 @@ export default function Timeline() {
           />
         </Link>
         <nav className={styles.nav}>
-          <Link href="/timeline" className={styles.navLink} aria-label="Timeline">
+          <Link href="/" className={`${styles.navLink} ${pathname === '/' ? styles.navLinkActive : ''}`} aria-label="Home">
+            <Image
+              src="/LOGO black.png"
+              alt="Home"
+              width={24}
+              height={24}
+              className={styles.navIcon}
+              style={{ objectFit: 'contain' }}
+            />
+            <span className={styles.navLabel}>Home</span>
+          </Link>
+          <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
             <svg
-              width="18"
-              height="18"
+              width="24"
+              height="24"
               viewBox="0 0 20 20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -163,19 +232,66 @@ export default function Timeline() {
                 strokeLinejoin="round"
               />
             </svg>
+            <span className={styles.navLabel}>Timeline</span>
           </Link>
-          <Link href="/settings" className={styles.navLink} aria-label="Settings">
+          <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.navLinkActive : ''}`} aria-label="Settings">
             <Image
               src="/Liam Persona.jpeg"
               alt="Settings"
-              width={18}
-              height={18}
+              width={24}
+              height={24}
               className={styles.navIcon}
               style={{ borderRadius: '50%', objectFit: 'cover' }}
             />
+            <span className={styles.navLabel}>Settings</span>
           </Link>
         </nav>
       </header>
+
+      {/* Bottom Navbar - Mobile Only */}
+      <nav className={styles.bottomNav}>
+        <Link href="/" className={`${styles.bottomNavLink} ${pathname === '/' ? styles.bottomNavLinkActive : ''}`} aria-label="Home">
+          <Image
+            src="/LOGO black.png"
+            alt="Home"
+            width={24}
+            height={24}
+            className={styles.bottomNavIcon}
+            style={{ objectFit: 'contain' }}
+          />
+          <span className={styles.bottomNavLabel}>Home</span>
+        </Link>
+        <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={styles.bottomNavIcon}
+          >
+            <path
+              d="M3 4H17M3 8H17M3 12H13M3 16H9"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className={styles.bottomNavLabel}>Timeline</span>
+        </Link>
+        <Link href="/settings" className={`${styles.bottomNavLink} ${pathname === '/settings' ? styles.bottomNavLinkActive : ''}`} aria-label="Settings">
+          <Image
+            src="/Liam Persona.jpeg"
+            alt="Settings"
+            width={24}
+            height={24}
+            className={styles.bottomNavIcon}
+            style={{ borderRadius: '50%', objectFit: 'cover' }}
+          />
+          <span className={styles.bottomNavLabel}>Settings</span>
+        </Link>
+      </nav>
 
       <main className={styles.main}>
         <div className={styles.pageHeader}>

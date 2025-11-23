@@ -1,1 +1,335 @@
-[]
+[
+  {
+    "id": "action_1700123456789_abc123def",
+    "userId": "demo_user_123",
+    "type": "schedule_dentist",
+    "status": "completed",
+    "input": "Find me a dentist near SoMa after 5pm next week",
+    "planSteps": [
+      {
+        "number": 1,
+        "description": "Search for dentists in SoMa area",
+        "details": "Using Google Maps and Yelp to find highly-rated dentists near SoMa"
+      },
+      {
+        "number": 2,
+        "description": "Filter by availability after 5pm",
+        "details": "Check available time slots for next week"
+      },
+      {
+        "number": 3,
+        "description": "Book appointment with Dr. Sarah Chen",
+        "details": "Selected Smile Dental Care at 123 Mission St, appointment on Jan 15 at 5:30pm"
+      }
+    ],
+    "executedSteps": [
+      {
+        "number": 1,
+        "description": "Searched for dentists in SoMa",
+        "status": "completed",
+        "timestamp": "2024-11-15T10:30:00Z"
+      },
+      {
+        "number": 2,
+        "description": "Filtered by evening availability",
+        "status": "completed",
+        "timestamp": "2024-11-15T10:32:00Z"
+      },
+      {
+        "number": 3,
+        "description": "Booked appointment with Dr. Sarah Chen",
+        "status": "completed",
+        "timestamp": "2024-11-15T10:35:00Z"
+      }
+    ],
+    "result": {
+      "success": true,
+      "provider": "Smile Dental Care",
+      "address": "123 Mission St, San Francisco, CA 94103",
+      "dentist": "Dr. Sarah Chen",
+      "appointmentDate": "2024-01-15",
+      "appointmentTime": "17:30",
+      "confirmationNumber": "SDC-2024-001523"
+    },
+    "feedback": {
+      "rating": 5,
+      "comment": "Perfect! Exactly what I needed.",
+      "wasCorrect": true
+    },
+    "confidence": 0.95,
+    "requiresApproval": true,
+    "metadata": {
+      "location": "SoMa, San Francisco",
+      "preferredTime": "after 5pm",
+      "dateRange": "next week"
+    },
+    "createdAt": "2024-11-15T10:25:00Z",
+    "approvedAt": "2024-11-15T10:28:00Z",
+    "completedAt": "2024-11-15T10:35:00Z",
+    "error": null
+  },
+  {
+    "id": "action_1700234567890_def456ghi",
+    "userId": "demo_user_123",
+    "type": "cancel_subscription",
+    "status": "completed",
+    "input": "Cancel my Calm subscription before it renews",
+    "planSteps": [
+      {
+        "number": 1,
+        "description": "Locate Calm subscription account",
+        "details": "Find subscription details in email or account"
+      },
+      {
+        "number": 2,
+        "description": "Navigate to cancellation page",
+        "details": "Access Calm account settings"
+      },
+      {
+        "number": 3,
+        "description": "Cancel subscription",
+        "details": "Process cancellation before next billing cycle"
+      }
+    ],
+    "executedSteps": [
+      {
+        "number": 1,
+        "description": "Found Calm subscription account",
+        "status": "completed",
+        "timestamp": "2024-11-18T14:20:00Z"
+      },
+      {
+        "number": 2,
+        "description": "Accessed cancellation settings",
+        "status": "completed",
+        "timestamp": "2024-11-18T14:22:00Z"
+      },
+      {
+        "number": 3,
+        "description": "Successfully cancelled subscription",
+        "status": "completed",
+        "timestamp": "2024-11-18T14:25:00Z"
+      }
+    ],
+    "result": {
+      "success": true,
+      "service": "Calm",
+      "cancellationDate": "2024-11-18",
+      "nextBillingDate": "2024-12-15",
+      "cancellationConfirmed": true,
+      "message": "Subscription will remain active until Dec 15, 2024"
+    },
+    "feedback": {
+      "rating": 4,
+      "comment": "Quick and easy, thanks!",
+      "wasCorrect": true
+    },
+    "confidence": 0.92,
+    "requiresApproval": true,
+    "metadata": {
+      "service": "Calm",
+      "urgency": "before renewal"
+    },
+    "createdAt": "2024-11-18T14:15:00Z",
+    "approvedAt": "2024-11-18T14:18:00Z",
+    "completedAt": "2024-11-18T14:25:00Z",
+    "error": null
+  },
+  {
+    "id": "action_1700345678901_ghi789jkl",
+    "userId": "demo_user_123",
+    "type": "dispute_charge",
+    "status": "completed",
+    "input": "Dispute that $250 charge from Gas Station XYZ on my credit card",
+    "planSteps": [
+      {
+        "number": 1,
+        "description": "Identify the charge",
+        "details": "Locate $250 charge from Gas Station XYZ in transaction history"
+      },
+      {
+        "number": 2,
+        "description": "Gather transaction details",
+        "details": "Collect date, amount, merchant information"
+      },
+      {
+        "number": 3,
+        "description": "File dispute with credit card company",
+        "details": "Submit dispute claim through bank portal"
+      }
+    ],
+    "executedSteps": [
+      {
+        "number": 1,
+        "description": "Identified charge on Nov 12, 2024",
+        "status": "completed",
+        "timestamp": "2024-11-20T09:10:00Z"
+      },
+      {
+        "number": 2,
+        "description": "Collected transaction details",
+        "status": "completed",
+        "timestamp": "2024-11-20T09:12:00Z"
+      },
+      {
+        "number": 3,
+        "description": "Filed dispute with Chase Bank",
+        "status": "completed",
+        "timestamp": "2024-11-20T09:18:00Z"
+      }
+    ],
+    "result": {
+      "success": true,
+      "bank": "Chase Bank",
+      "disputeId": "DIS-2024-1120-789456",
+      "amount": 250,
+      "merchant": "Gas Station XYZ",
+      "status": "under_review",
+      "estimatedResolution": "7-10 business days",
+      "message": "Dispute filed successfully. Temporary credit will appear in 2-3 business days."
+    },
+    "feedback": {
+      "rating": 5,
+      "comment": "Great help with the dispute process!",
+      "wasCorrect": true
+    },
+    "confidence": 0.88,
+    "requiresApproval": true,
+    "metadata": {
+      "amount": 250,
+      "merchant": "Gas Station XYZ",
+      "transactionDate": "2024-11-12"
+    },
+    "createdAt": "2024-11-20T09:05:00Z",
+    "approvedAt": "2024-11-20T09:08:00Z",
+    "completedAt": "2024-11-20T09:18:00Z",
+    "error": null
+  },
+  {
+    "id": "action_1700456789012_jkl012mno",
+    "userId": "demo_user_123",
+    "type": "schedule_dentist",
+    "status": "failed",
+    "input": "Book a dentist appointment for this Saturday morning",
+    "planSteps": [
+      {
+        "number": 1,
+        "description": "Search for available Saturday appointments",
+        "details": "Find dentists with Saturday morning availability"
+      },
+      {
+        "number": 2,
+        "description": "Select preferred dentist",
+        "details": "Choose from available options"
+      },
+      {
+        "number": 3,
+        "description": "Complete booking",
+        "details": "Confirm appointment details"
+      }
+    ],
+    "executedSteps": [
+      {
+        "number": 1,
+        "description": "Searched for Saturday appointments",
+        "status": "completed",
+        "timestamp": "2024-11-21T11:00:00Z"
+      },
+      {
+        "number": 2,
+        "description": "Found limited availability",
+        "status": "completed",
+        "timestamp": "2024-11-21T11:05:00Z"
+      },
+      {
+        "number": 3,
+        "description": "Attempted to book appointment",
+        "status": "failed",
+        "timestamp": "2024-11-21T11:10:00Z",
+        "error": "Booking system error: Unable to process appointment request"
+      }
+    ],
+    "result": {
+      "success": false,
+      "error": "Booking system temporarily unavailable",
+      "suggestion": "Please try again later or contact the dental office directly"
+    },
+    "feedback": null,
+    "confidence": 0.85,
+    "requiresApproval": true,
+    "metadata": {
+      "preferredDay": "Saturday",
+      "preferredTime": "morning"
+    },
+    "createdAt": "2024-11-21T10:55:00Z",
+    "approvedAt": "2024-11-21T10:58:00Z",
+    "completedAt": "2024-11-21T11:10:00Z",
+    "error": "Booking system error: Unable to process appointment request"
+  },
+  {
+    "id": "action_1700567890123_mno345pqr",
+    "userId": "demo_user_123",
+    "type": "cancel_subscription",
+    "status": "completed",
+    "input": "Cancel my Netflix subscription",
+    "planSteps": [
+      {
+        "number": 1,
+        "description": "Access Netflix account",
+        "details": "Log into Netflix account settings"
+      },
+      {
+        "number": 2,
+        "description": "Navigate to subscription management",
+        "details": "Find cancellation options"
+      },
+      {
+        "number": 3,
+        "description": "Confirm cancellation",
+        "details": "Complete cancellation process"
+      }
+    ],
+    "executedSteps": [
+      {
+        "number": 1,
+        "description": "Accessed Netflix account",
+        "status": "completed",
+        "timestamp": "2024-11-22T16:30:00Z"
+      },
+      {
+        "number": 2,
+        "description": "Found subscription settings",
+        "status": "completed",
+        "timestamp": "2024-11-22T16:32:00Z"
+      },
+      {
+        "number": 3,
+        "description": "Successfully cancelled subscription",
+        "status": "completed",
+        "timestamp": "2024-11-22T16:35:00Z"
+      }
+    ],
+    "result": {
+      "success": true,
+      "service": "Netflix",
+      "cancellationDate": "2024-11-22",
+      "accessUntil": "2024-12-22",
+      "cancellationConfirmed": true,
+      "message": "Your subscription will remain active until Dec 22, 2024. You can reactivate anytime."
+    },
+    "feedback": {
+      "rating": 5,
+      "comment": "Perfect execution!",
+      "wasCorrect": true
+    },
+    "confidence": 0.96,
+    "requiresApproval": true,
+    "metadata": {
+      "service": "Netflix"
+    },
+    "createdAt": "2024-11-22T16:25:00Z",
+    "approvedAt": "2024-11-22T16:28:00Z",
+    "completedAt": "2024-11-22T16:35:00Z",
+    "error": null
+  }
+]

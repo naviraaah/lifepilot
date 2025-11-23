@@ -15,7 +15,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Bottom Navbar - Mobile Only */
+.bottomNav {
+  display: none;
 }
 
 .logoLink {
@@ -60,16 +74,41 @@
 .navIcon {
   flex-shrink: 0;
   opacity: 0.8;
+  width: 28px;
+  height: 28px;
 }
 
 .navLink:hover .navIcon {
   opacity: 1;
 }
 
+.navLabel {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--color-midnight);
+  letter-spacing: 0;
+  opacity: 0.8;
+}
+
+.navLink:hover .navLabel {
+  opacity: 1;
+}
+
+.navLabel {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--color-midnight);
+  letter-spacing: 0;
+  margin-top: 0.125rem;
+  display: none;
+}
+
 .content {
   max-width: 850px;
   margin: 0 auto;
   padding: 3rem 2rem;
+  padding-top: calc(3rem + 100px);
   position: relative;
   width: 100%;
 }
@@ -128,12 +167,13 @@
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 20px;
   padding: 2rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -478,27 +518,175 @@
 
 @media (max-width: 768px) {
   .header {
-    padding: 1.5rem 1.25rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    padding: 1rem 1.25rem;
     flex-direction: row;
     gap: 1rem;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    z-index: 100;
+  }
+
+  .logoLink {
+    display: none;
   }
 
   .logoImage {
-    width: 140px;
-    height: auto;
+    display: none;
   }
 
   .nav {
-    gap: 0.5rem;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    gap: 0;
   }
 
   .navLink {
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    min-width: 60px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.7;
+    position: relative;
+    flex: 1;
+    max-width: 100px;
+  }
+
+  .navLink:hover,
+  .navLink:active {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .navIcon {
+    width: 24px;
+    height: 24px;
+    opacity: 1;
+  }
+
+  .navLabel {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 400;
+    color: var(--color-midnight);
+    letter-spacing: 0;
+    margin-top: 0.125rem;
+    line-height: 1.2;
+  }
+
+  .navLinkActive {
+    opacity: 1 !important;
+    background: rgba(255, 146, 138, 0.15) !important;
+  }
+
+  .navLinkActive .navIcon {
+    opacity: 1;
+  }
+
+  .navLinkActive .navLabel {
+    color: var(--color-sunrise-coral);
+    font-weight: 500;
   }
 
   .content {
-    padding: 2rem 1.25rem;
+    padding: 2rem 1.25rem calc(2rem + 80px + env(safe-area-inset-bottom));
+    padding-top: calc(2rem + 80px);
+  }
+
+  /* Hide nav items in top header on mobile */
+  .header .nav {
+    display: none;
+  }
+
+  /* Bottom Navbar - Mobile */
+  .bottomNav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 20px 20px 0 0;
+    z-index: 100;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    gap: 0;
+  }
+
+  .bottomNavLink {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    min-width: 60px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.7;
+    position: relative;
+    flex: 1;
+    max-width: 100px;
+  }
+
+  .bottomNavLink:hover,
+  .bottomNavLink:active {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .bottomNavIcon {
+    width: 24px;
+    height: 24px;
+    opacity: 1;
+  }
+
+  .bottomNavLabel {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 400;
+    color: var(--color-midnight);
+    letter-spacing: 0;
+    margin-top: 0.125rem;
+    line-height: 1.2;
+  }
+
+  .bottomNavLinkActive {
+    opacity: 1 !important;
+    background: rgba(255, 146, 138, 0.15) !important;
+  }
+
+  .bottomNavLinkActive .bottomNavIcon {
+    opacity: 1;
+  }
+
+  .bottomNavLinkActive .bottomNavLabel {
+    color: var(--color-sunrise-coral);
+    font-weight: 500;
   }
 
   .content h1 {

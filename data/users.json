@@ -1,0 +1,32 @@
+[
+  {
+    "id": "demo_user_123",
+    "email": "liam.anderson@email.com",
+    "phone": "+1 (415) 555-7890",
+    "name": "Liam",
+    "preferences": {
+      "timezone": "America/Los_Angeles",
+      "notificationEmail": true,
+      "notificationSMS": true,
+      "autoApproveAfterTraining": false,
+      "trainingRounds": 8
+    },
+    "trustLevel": "training",
+    "linkedAccounts": {
+      "email": {
+        "linked": true,
+        "provider": "Gmail"
+      },
+      "phone": {
+        "linked": true,
+        "verified": true
+      },
+      "calendar": {
+        "linked": false,
+        "provider": null
+      }
+    },
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "lastActive": "2024-02-14T15:30:00.000Z"
+  }
+]
