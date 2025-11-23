@@ -125,6 +125,14 @@
   font-size: 1.25rem;
   font-weight: 700;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trustBadge svg {
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .trustInfo {
@@ -261,7 +269,20 @@
 }
 
 .integrationIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-midnight);
+  opacity: 0.7;
   font-size: 2rem;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.integrationIcon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .integrationInfo {

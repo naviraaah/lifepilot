@@ -217,7 +217,15 @@ export default function Home() {
                   }`}
                 >
                   {message.role === "assistant" && (
-                    <div className={styles.messageAvatar}>🤖</div>
+                    <div className={styles.messageAvatar}>
+                      <Image
+                        src="/LOGO colored.png"
+                        alt="LifePilot AI"
+                        width={36}
+                        height={36}
+                        style={{ objectFit: 'contain' }}
+                      />
+                    </div>
                   )}
                   <div className={styles.messageContent}>
                     {message.isLoading ? (
@@ -235,7 +243,15 @@ export default function Home() {
                     )}
                   </div>
                   {message.role === "user" && (
-                    <div className={styles.userAvatar}>👤</div>
+                    <div className={styles.userAvatar}>
+                      <Image
+                        src="/Liam Persona.jpeg"
+                        alt="User"
+                        width={36}
+                        height={36}
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
                   )}
                 </div>
               ))}
@@ -264,11 +280,11 @@ export default function Home() {
                 input.trim() && !actionLoading ? styles.submitButtonEnabled : ""
               }`}
               disabled={actionLoading || !input.trim()}
-              aria-label="Submit"
+              aria-label={input.trim() ? "Submit" : "Voice input"}
             >
               {actionLoading ? (
                 <span className={styles.spinner}>⏳</span>
-              ) : (
+              ) : input.trim() ? (
                 <svg
                   width="20"
                   height="20"
@@ -282,6 +298,55 @@ export default function Home() {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect
+                    x="3"
+                    y="6"
+                    width="2"
+                    height="8"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="6"
+                    y="5"
+                    width="2"
+                    height="10"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="9"
+                    y="4"
+                    width="2"
+                    height="12"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="12"
+                    y="5"
+                    width="2"
+                    height="10"
+                    rx="1"
+                    fill="currentColor"
+                  />
+                  <rect
+                    x="15"
+                    y="6"
+                    width="2"
+                    height="8"
+                    rx="1"
+                    fill="currentColor"
                   />
                 </svg>
               )}
