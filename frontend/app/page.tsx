@@ -706,7 +706,7 @@ export default function Home() {
       <header className={styles.header}>
         <Link href="/" className={styles.logoLink}>
           <Image
-            src="/full name logo black.png"
+            src="/full name logo colored.png"
             alt="LifePilot"
             width={180}
             height={40}
@@ -797,7 +797,7 @@ export default function Home() {
             alt="Settings"
             width={24}
             height={24}
-            className={styles.bottomNavIcon}
+            className={styles.bottomNavProfileIcon}
             style={{ borderRadius: '50%', objectFit: 'cover' }}
           />
           <span className={styles.bottomNavLabel}>Settings</span>
@@ -983,21 +983,13 @@ export default function Home() {
               {actionLoading ? (
                 <span className={styles.spinner}>⏳</span>
               ) : (
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M4 10H16M16 10L11 5M16 10L11 15"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <Image
+                  src="/LOGO White.png"
+                  alt="Submit"
+                  width={20}
+                  height={20}
+                  style={{ objectFit: 'contain' }}
+                />
               )}
             </button>
             {attachments.length > 0 && (

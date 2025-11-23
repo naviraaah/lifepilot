@@ -132,7 +132,7 @@ export default function Settings() {
         <header className={styles.header}>
           <Link href="/" className={styles.logoLink}>
             <Image
-              src="/full name logo black.png"
+              src="/full name logo colored.png"
               alt="LifePilot"
               width={180}
               height={40}
@@ -222,7 +222,7 @@ export default function Settings() {
               alt="Settings"
               width={24}
               height={24}
-              className={styles.bottomNavIcon}
+              className={styles.bottomNavProfileIcon}
               style={{ borderRadius: '50%', objectFit: 'cover' }}
             />
             <span className={styles.bottomNavLabel}>Settings</span>
@@ -238,7 +238,7 @@ export default function Settings() {
       <header className={styles.header}>
         <Link href="/" className={styles.logoLink}>
           <Image
-            src="/full name logo black.png"
+            src="/full name logo colored.png"
             alt="LifePilot"
             width={180}
             height={40}
