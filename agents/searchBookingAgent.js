@@ -154,11 +154,11 @@ async function deleteSession(sessionId) {
 /**
  * Monitors the session until completion
  * @param {string} sessionId - Session ID
- * @param {number} pollInterval - Polling interval in milliseconds (default: 2000)
- * @param {number} maxWaitTime - Maximum wait time in milliseconds (default: 300000 = 5 minutes)
+ * @param {number} pollInterval - Polling interval in milliseconds (default: 5000)
+ * @param {number} maxWaitTime - Maximum wait time in milliseconds (default: 600000 = 10 minutes)
  * @returns {Promise<Object>} Final status
  */
-async function monitorSession(sessionId, pollInterval = 2000, maxWaitTime = 300000) {
+async function monitorSession(sessionId, pollInterval = 5000, maxWaitTime = 600000) {
   const startTime = Date.now();
   let lastMessageCount = 0;
   let pollCount = 0;
@@ -279,8 +279,8 @@ async function monitorSession(sessionId, pollInterval = 2000, maxWaitTime = 3000
  * Main function to run search and booking agent
  * @param {string} task - The task description (e.g., "Compare prices", "Book appointment")
  * @param {Object} options - Additional options
- * @param {number} options.pollInterval - Polling interval in ms (default: 2000)
- * @param {number} options.maxWaitTime - Max wait time in ms (default: 300000)
+ * @param {number} options.pollInterval - Polling interval in ms (default: 5000)
+ * @param {number} options.maxWaitTime - Max wait time in ms (default: 600000)
  * @returns {Promise<Object>} Result object with action, summary, and details
  */
 async function runSearchBookingAgent(task, options = {}) {
@@ -288,7 +288,7 @@ async function runSearchBookingAgent(task, options = {}) {
   console.log('[searchBookingAgent] Task:', task);
   console.log('[searchBookingAgent] Options:', options);
   
-  const { pollInterval = 2000, maxWaitTime = 300000 } = options;
+  const { pollInterval = 5000, maxWaitTime = 600000 } = options;
   let sessionId = null;
   
   try {
@@ -407,14 +407,76 @@ async function bookAppointment(appointmentType, preferences = {}, options = {}) 
   console.log('[searchBookingAgent] Options:', options);
   
   const { date, time, location } = preferences;
-  let task = `Book a ${appointmentType} appointment`;
   
-  if (date) task += ` for ${date}`;
-  if (time) task += ` at ${time}`;
-  if (location) task += ` near ${location}`;
-  
-  task += '. Return booking confirmation details as JSON.';
-  
+  // Build detailed task with comprehensive instructions
+  let task = `You are LifePilot — the user's AI pilot for the boring operations of everyday life.
+
+Your job is to autonomously schedule a ${appointmentType} appointment for the user using multi-step reasoning and real tool execution.
+
+GOAL:
+Given the user request, find a ${appointmentType} provider near the target location, filter available times, select the best slot, fill the booking form, confirm the appointment, and deliver a final summary.
+
+USER REQUEST:
+Book a ${appointmentType} appointment${date ? ` for ${date}` : ''}${time ? ` at ${time}` : ''}${location ? ` near ${location}` : ''}.
+
+WORKFLOW STEPS:
+
+1. Parse the user's natural language request and extract all constraints:
+   - Location requirement: ${location || 'not specified'}
+   - Date preference: ${date || 'not specified'}
+   - Time preference: ${time || 'not specified'}
+
+2. Search for ${appointmentType} providers in the target area using web search.
+
+3. Filter the results based on:
+   - User location requirement (prioritize closest matches)
+   - Time window availability
+   - Next available slots that match preferences
+
+4. Select the best provider using:
+   - Earliest time that matches all constraints
+   - Highest rating (if available)
+   - Best location match
+   - Availability confirmation
+
+5. Navigate to the booking page and fill the appointment booking form with:
+   - Selected date and time
+   - User information (use reasonable defaults if needed)
+   - Appointment type/reason
+
+6. Submit the booking form and confirm the appointment.
+
+7. Retrieve confirmation details including:
+   - Provider name and contact information
+   - Appointment date and time
+   - Address/location
+   - Confirmation ID or reference number
+   - Any additional instructions
+
+8. Return a clean, structured summary in JSON format with:
+   - provider: { name, address, phone, rating }
+   - appointment: { date, time, confirmationId, type }
+   - location: { address, city, zipCode }
+   - summary: "Human-readable confirmation message"
+
+AGENT RULES:
+- Never ask the user to click anything or make manual choices.
+- Don't require user to choose between options — make the decision automatically based on best match.
+- If tool results are incomplete, make your best inference and proceed.
+- Always think step-by-step before selecting tools.
+- If exact criteria are impossible:
+  * Suggest closest available times
+  * Offer nearby alternative locations
+  * Provide alternative appointment types if applicable
+  * Present the next best set of options
+  * Continue progress autonomously with the best available option
+
+- Be proactive and autonomous — complete the entire booking process without user intervention.
+- If booking requires information you don't have, use reasonable defaults or infer from context.
+- Always confirm the booking and retrieve confirmation details before completing.
+
+Return the final result as a JSON object with all booking details.`;
+
   return await runSearchBookingAgent(task, options);
 }
 
@@ -423,8 +485,8 @@ async function bookAppointment(appointmentType, preferences = {}, options = {}) 
  * @param {string} product - Product name to search for
  * @param {Array<string>} retailers - Array of retailer names/domains (e.g., ["amazon.com", "bestbuy.com"])
  * @param {Object} options - Additional options
- * @param {number} options.pollInterval - Polling interval in ms (default: 2000)
- * @param {number} options.maxWaitTime - Max wait time in ms (default: 300000)
+ * @param {number} options.pollInterval - Polling interval in ms (default: 5000)
+ * @param {number} options.maxWaitTime - Max wait time in ms (default: 600000)
  * @returns {Promise<Object>} Price comparison results
  */
 async function checkPrices(product, retailers, options = {}) {
@@ -433,7 +495,7 @@ async function checkPrices(product, retailers, options = {}) {
   console.log('[searchBookingAgent] Retailers:', retailers);
   console.log('[searchBookingAgent] Options:', options);
   
-  const { pollInterval = 2000, maxWaitTime = 300000 } = options;
+  const { pollInterval = 5000, maxWaitTime = 600000 } = options;
   let sessionId = null;
 
   // Validate inputs
@@ -568,8 +630,8 @@ Return as JSON array.
  * Research product specifications, prices, and reviews
  * @param {string} productName - Product name to research
  * @param {Object} options - Additional options
- * @param {number} options.pollInterval - Polling interval in ms (default: 2000)
- * @param {number} options.maxWaitTime - Max wait time in ms (default: 300000)
+ * @param {number} options.pollInterval - Polling interval in ms (default: 5000)
+ * @param {number} options.maxWaitTime - Max wait time in ms (default: 600000)
  * @returns {Promise<Object>} Research results
  */
 async function researchProduct(productName, options = {}) {
@@ -577,7 +639,7 @@ async function researchProduct(productName, options = {}) {
   console.log('[searchBookingAgent] Product Name:', productName);
   console.log('[searchBookingAgent] Options:', options);
   
-  const { pollInterval = 2000, maxWaitTime = 300000 } = options;
+  const { pollInterval = 5000, maxWaitTime = 600000 } = options;
   let sessionId = null;
 
   // Validate input

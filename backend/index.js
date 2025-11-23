@@ -38,7 +38,7 @@ app.get('/', (req, res) => {
 // Single endpoint that analyzes user input and routes to appropriate agent
 app.post('/api/agent', async (req, res) => {
   try {
-    const { input, userId, pollInterval, maxWaitTime } = req.body;
+    const { input, userId, pollInterval, maxWaitTime, conversationHistory } = req.body;
     
     if (!input) {
       return res.status(400).json({ error: 'Input is required' });
@@ -55,6 +55,12 @@ app.post('/api/agent', async (req, res) => {
     const options = { userId };
     if (pollInterval) options.pollInterval = pollInterval;
     if (maxWaitTime) options.maxWaitTime = maxWaitTime;
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      options.conversationHistory = conversationHistory;
+      console.log('[Backend] Received conversation history:', conversationHistory.length, 'messages');
+    } else {
+      options.conversationHistory = [];
+    }
 
     // Route to appropriate agent based on context analysis
     const result = await routeAgent(input, openai, options);

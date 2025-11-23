@@ -10,8 +10,8 @@ import styles from "./page.module.css";
 // TypeScript declarations for Web Speech API
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
 
@@ -51,6 +51,13 @@ interface SpeechRecognitionResult {
   isFinal: boolean;
 }
 
+// Placeholder suggestions that loop in typewriter effect
+const PLACEHOLDER_SUGGESTIONS = [
+  "Schedule a dentist appointment near me...",
+  "Compare Sony WH-1000XM5 prices on Amazon, Best Buy, and Target",
+  "Research iPhone 15 Pro specifications and reviews"
+];
+
 interface SpeechRecognitionAlternative {
   transcript: string;
   confidence: number;
@@ -72,6 +79,9 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [placeholderText, setPlaceholderText] = useState("");
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = "demo_user_123";
 
@@ -95,6 +105,54 @@ export default function Home() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Typewriter effect for placeholder
+  useEffect(() => {
+    const hasMessages = messages.length > 0;
+    
+    if (hasMessages || actionLoading) {
+      setPlaceholderText("Type your message...");
+      return;
+    }
+
+    let timeoutId: NodeJS.Timeout;
+    const currentSuggestion = PLACEHOLDER_SUGGESTIONS[placeholderIndex];
+    const typingSpeed = 50; // milliseconds per character
+    const deletingSpeed = 30; // milliseconds per character
+    const pauseAfterComplete = 2000; // pause after completing a suggestion
+    const pauseAfterDelete = 500; // pause before starting next suggestion
+
+    if (isTyping) {
+      // Typing phase
+      if (placeholderText.length < currentSuggestion.length) {
+        timeoutId = setTimeout(() => {
+          setPlaceholderText(currentSuggestion.slice(0, placeholderText.length + 1));
+        }, typingSpeed);
+      } else {
+        // Finished typing, pause then start deleting
+        timeoutId = setTimeout(() => {
+          setIsTyping(false);
+        }, pauseAfterComplete);
+      }
+    } else {
+      // Deleting phase
+      if (placeholderText.length > 0) {
+        timeoutId = setTimeout(() => {
+          setPlaceholderText(placeholderText.slice(0, -1));
+        }, deletingSpeed);
+      } else {
+        // Finished deleting, move to next suggestion
+        timeoutId = setTimeout(() => {
+          setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDER_SUGGESTIONS.length);
+          setIsTyping(true);
+        }, pauseAfterDelete);
+      }
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [placeholderText, placeholderIndex, isTyping, messages.length, actionLoading]);
 
   // Handle voice input processing
   const handleVoiceInput = useCallback(async (text: string) => {
@@ -123,7 +181,15 @@ export default function Home() {
     setMessages((prev) => [...prev, loadingMessage]);
 
     try {
-      const result = await sendAgentRequest(text, userId);
+      // Prepare conversation history for context
+      const conversationHistory = messages
+        .filter(msg => !msg.isLoading)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+      
+      const result: any = await sendAgentRequest(text, userId, undefined, undefined, conversationHistory);
       let responseText = "";
 
       if (result.status === "error" || result.error) {
@@ -565,8 +631,16 @@ export default function Home() {
     setMessages((prev) => [...prev, loadingMessage]);
 
     try {
+      // Prepare conversation history for context
+      const conversationHistory = messages
+        .filter(msg => !msg.isLoading)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+      
       // Call unified agent API - it will automatically route to the right agent
-      const result = await sendAgentRequest(currentInput, userId);
+      const result: any = await sendAgentRequest(currentInput, userId, undefined, undefined, conversationHistory);
 
       // Check if the result indicates an error
       if (result.status === "error" || result.error) {
@@ -727,9 +801,9 @@ export default function Home() {
       {/* Header */}
       <header className={styles.header}>
         <Link href="/" className={styles.logoLink}>
-          <Image
+          <Image 
             src="/full name logo colored.png"
-            alt="LifePilot"
+            alt="LifePilot" 
             width={180}
             height={40}
             className={styles.logoImage}
@@ -831,10 +905,10 @@ export default function Home() {
         <div className={styles.content}>
           {/* Greeting - only show when no messages */}
           {!hasMessages && (
-            <div className={styles.greeting}>
+          <div className={styles.greeting}>
               <h1>Share your boring tasks</h1>
-              <p>Tell me what you need, and I'll handle it for you</p>
-            </div>
+            <p>Tell me what you need, and I'll handle it for you</p>
+          </div>
           )}
 
           {/* Chat Thread */}
@@ -994,16 +1068,12 @@ export default function Home() {
                   setUsedVoiceInput(false);
                 }
               }}
-              placeholder={
-                hasMessages
-                  ? "Type your message..."
-                  : "Schedule a dentist appointment near me..."
-              }
+              placeholder={placeholderText || "Schedule a dentist appointment near me..."}
               className={styles.mainInput}
               disabled={actionLoading}
               autoFocus
             />
-            <button
+            <button 
               type="button"
               onClick={toggleListening}
               className={`${styles.micButton} ${
@@ -1115,52 +1185,52 @@ export default function Home() {
 
           {/* Quick Actions - only show when no messages */}
           {!hasMessages && (
-            <div className={styles.quickActions}>
+          <div className={styles.quickActions}>
               <p className={styles.quickActionsLabel}>
                 Not sure where to start? Try one of these:
               </p>
-              <div className={styles.quickActionGrid}>
-                <button
+            <div className={styles.quickActionGrid}>
+              <button 
                   onClick={() =>
                     handleQuickAction(
                       "Find me a dentist near SoMa after 5pm next week"
                     )
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
-                  <span className={styles.quickActionIcon}>🦷</span>
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
+                <span className={styles.quickActionIcon}>🦷</span>
                   <span className={styles.quickActionText}>
                     Schedule Dentist
                   </span>
-                </button>
-                <button
+              </button>
+              <button 
                   onClick={() =>
                     handleQuickAction(
                       "Cancel my Calm subscription before it renews"
                     )
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
-                  <span className={styles.quickActionIcon}>❌</span>
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
+                <span className={styles.quickActionIcon}>❌</span>
                   <span className={styles.quickActionText}>
                     Cancel Subscription
                   </span>
-                </button>
-                <button
+              </button>
+              <button 
                   onClick={() =>
                     handleQuickAction(
                       "Dispute that $250 charge from Gas Station XYZ"
                     )
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
-                  <span className={styles.quickActionIcon}>💳</span>
-                  <span className={styles.quickActionText}>Dispute Charge</span>
-                </button>
-                <button
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
+                <span className={styles.quickActionIcon}>💳</span>
+                <span className={styles.quickActionText}>Dispute Charge</span>
+              </button>
+              <button 
                   onClick={() =>
                     handleQuickAction(
                       "Compare Sony WH-1000XM5 prices on Amazon, Best Buy, and Target"
@@ -1192,36 +1262,36 @@ export default function Home() {
                       "Book a haircut appointment for this Saturday morning"
                     )
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
-                  <span className={styles.quickActionIcon}>💇</span>
-                  <span className={styles.quickActionText}>Book Haircut</span>
-                </button>
-                <button
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
+                <span className={styles.quickActionIcon}>💇</span>
+                <span className={styles.quickActionText}>Book Haircut</span>
+              </button>
+              <button 
                   onClick={() =>
                     handleQuickAction(
                       "Find the best Italian restaurant for dinner tonight"
                     )
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
                   <span className={styles.quickActionIcon}>🍝</span>
                   <span className={styles.quickActionText}>
                     Find Restaurant
                   </span>
-                </button>
-                <button
+              </button>
+              <button 
                   onClick={() =>
                     handleQuickAction("Cancel my Netflix subscription")
                   }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
-                  <span className={styles.quickActionIcon}>📺</span>
-                  <span className={styles.quickActionText}>Cancel Netflix</span>
-                </button>
+                className={styles.quickActionPill}
+                disabled={actionLoading}
+              >
+                <span className={styles.quickActionIcon}>📺</span>
+                <span className={styles.quickActionText}>Cancel Netflix</span>
+              </button>
                 <button
                   onClick={() =>
                     handleQuickAction("Add DCS to my account")
@@ -1238,11 +1308,11 @@ export default function Home() {
 
           {/* Footer Info */}
           {!hasMessages && (
-            <div className={styles.footerInfo}>
+          <div className={styles.footerInfo}>
               <p>
                 Built with AGI, OpenAI GPT-4 · Autonomous Agent Infrastructure
               </p>
-            </div>
+          </div>
           )}
         </div>
       </main>

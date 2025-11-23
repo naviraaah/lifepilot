@@ -59,7 +59,8 @@ export const sendAgentRequest = async (
   input: string,
   userId?: string,
   pollInterval?: number,
-  maxWaitTime?: number
+  maxWaitTime?: number,
+  conversationHistory?: Array<{ role: string; content: string }>
 ): Promise<AgentResponse> => {
   try {
     const response = await api.post("/api/agent", {
@@ -67,6 +68,7 @@ export const sendAgentRequest = async (
       userId,
       pollInterval,
       maxWaitTime,
+      conversationHistory,
     });
     return response.data;
   } catch (error: any) {
