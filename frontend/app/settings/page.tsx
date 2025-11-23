@@ -184,6 +184,50 @@ export default function Settings() {
             </Link>
           </nav>
         </header>
+        {/* Bottom Navbar - Mobile Only */}
+        <nav className={styles.bottomNav}>
+          <Link href="/" className={`${styles.bottomNavLink} ${pathname === '/' ? styles.bottomNavLinkActive : ''}`} aria-label="Home">
+            <Image
+              src="/LOGO black.png"
+              alt="Home"
+              width={24}
+              height={24}
+              className={styles.bottomNavIcon}
+              style={{ objectFit: 'contain' }}
+            />
+            <span className={styles.bottomNavLabel}>Home</span>
+          </Link>
+          <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className={styles.bottomNavIcon}
+            >
+              <path
+                d="M3 4H17M3 8H17M3 12H13M3 16H9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className={styles.bottomNavLabel}>Timeline</span>
+          </Link>
+          <Link href="/settings" className={`${styles.bottomNavLink} ${pathname === '/settings' ? styles.bottomNavLinkActive : ''}`} aria-label="Settings">
+            <Image
+              src="/Liam Persona.jpeg"
+              alt="Settings"
+              width={24}
+              height={24}
+              className={styles.bottomNavIcon}
+              style={{ borderRadius: '50%', objectFit: 'cover' }}
+            />
+            <span className={styles.bottomNavLabel}>Settings</span>
+          </Link>
+        </nav>
         <div className={styles.loading}>Loading settings...</div>
       </div>
     );
@@ -246,6 +290,51 @@ export default function Settings() {
           </Link>
         </nav>
       </header>
+
+      {/* Bottom Navbar - Mobile Only */}
+      <nav className={styles.bottomNav}>
+        <Link href="/" className={`${styles.bottomNavLink} ${pathname === '/' ? styles.bottomNavLinkActive : ''}`} aria-label="Home">
+          <Image
+            src="/LOGO black.png"
+            alt="Home"
+            width={24}
+            height={24}
+            className={styles.bottomNavIcon}
+            style={{ objectFit: 'contain' }}
+          />
+          <span className={styles.bottomNavLabel}>Home</span>
+        </Link>
+        <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={styles.bottomNavIcon}
+          >
+            <path
+              d="M3 4H17M3 8H17M3 12H13M3 16H9"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className={styles.bottomNavLabel}>Timeline</span>
+        </Link>
+        <Link href="/settings" className={`${styles.bottomNavLink} ${pathname === '/settings' ? styles.bottomNavLinkActive : ''}`} aria-label="Settings">
+          <Image
+            src="/Liam Persona.jpeg"
+            alt="Settings"
+            width={24}
+            height={24}
+            className={styles.bottomNavIcon}
+            style={{ borderRadius: '50%', objectFit: 'cover' }}
+          />
+          <span className={styles.bottomNavLabel}>Settings</span>
+        </Link>
+      </nav>
 
       <div className={styles.content}>
         <h1>Settings</h1>
