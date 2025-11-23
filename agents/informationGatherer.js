@@ -43,11 +43,20 @@ function convertRelativeDate(dateString) {
  * @param {string} userInput - User's input
  * @param {Array} conversationHistory - Previous messages in the conversation
  * @param {Object} openai - OpenAI client instance
+ * @param {Array} memories - User memories for context
  * @returns {Promise<Object>} Either a question to ask or complete information ready for AGI
  */
-async function gatherInformation(userInput, conversationHistory = [], openai) {
+async function gatherInformation(userInput, conversationHistory = [], openai, memories = []) {
   console.log('[Information Gatherer] Processing input:', userInput);
   console.log('[Information Gatherer] Conversation history length:', conversationHistory.length);
+  console.log('[Information Gatherer] Memories received:', memories.length);
+  if (memories.length > 0) {
+    console.log('[Information Gatherer] Memory details:', memories.map(m => ({
+      title: m.title,
+      location: m.metadata?.location,
+      preferences: m.metadata?.preferences
+    })));
+  }
 
 
   // Count how many questions have been asked in this conversation
@@ -60,8 +69,44 @@ async function gatherInformation(userInput, conversationHistory = [], openai) {
 
   console.log('[Information Gatherer] Questions already asked:', questionsAsked);
 
+  // Format memory context for the prompt
+  let memoryContext = '';
+  if (memories && memories.length > 0) {
+    console.log('[Information Gatherer] Formatting memory context...');
+    memoryContext = '\n\nUSER MEMORIES & PREFERENCES:\n';
+    memories.forEach((memory) => {
+      // Memory model instances are plain objects, use directly
+      const memObj = memory;
+      
+      if (memObj.description) {
+        memoryContext += `- ${memObj.title || 'Memory'}: ${memObj.description}\n`;
+      }
+      if (memObj.metadata) {
+        if (memObj.metadata.location) {
+          memoryContext += `  Location: ${memObj.metadata.location}\n`;
+        }
+        if (memObj.metadata.frequentLocations && memObj.metadata.frequentLocations.length > 0) {
+          memoryContext += `  Frequent Locations: ${memObj.metadata.frequentLocations.join(', ')}\n`;
+        }
+        if (memObj.metadata.preferences) {
+          Object.entries(memObj.metadata.preferences).forEach(([key, value]) => {
+            memoryContext += `  ${key}: ${value}\n`;
+          });
+        }
+      }
+    });
+    memoryContext += '\nCRITICAL: Use this information to make intelligent defaults. For example:\n';
+    memoryContext += '- If the user wants to book an appointment and their preference is "Sunnyvale area", automatically use "Sunnyvale" as the location without asking.\n';
+    memoryContext += '- If location is missing but user has a preferred location in memories, use that as the default.\n';
+    memoryContext += '- If appointment type is missing but user has dental issues in preferences, default to "dentist" appointment.\n';
+    memoryContext += '- Always prioritize user preferences from memories over asking questions.\n';
+    console.log('[Information Gatherer] Memory context formatted, length:', memoryContext.length);
+  } else {
+    console.log('[Information Gatherer] No memories provided');
+  }
+
   // Analyze what task the user wants and what information we have
-  const analysisPrompt = `You are an ultra-efficient information-gathering agent. Your goal is to collect ONLY the minimum required information to execute the user's task.
+  const analysisPrompt = `You are an ultra-efficient information-gathering agent. Your goal is to collect ONLY the minimum required information to execute the user's task.${memoryContext}
 
 ABSOLUTE RULES:
 - TOTAL questions allowed per task: **maximum 2**
@@ -86,10 +131,14 @@ Your job during analysis:
 1. Identify the user's task (bookAppointment, cancelSubscription, comparePrices, researchProduct, other)
 2. Identify what information we already have from the conversation
 3. If date information contains relative terms like "tonight", "today", "tomorrow", automatically convert to actual date (YYYY-MM-DD format) in collectedInfo.date
-4. Identify ONLY the critical missing info required to proceed
-5. Count how many questions have already been asked (check conversationHistory for assistant messages with questions)
-6. Decide whether we should:
-   - Proceed without asking anything (if we can infer/assume defaults)
+4. CRITICAL: Use user memories to fill missing information automatically:
+   - If location is missing but user has appointment preferences (e.g., "Sunnyvale area"), set location to "Sunnyvale" in collectedInfo.location
+   - If appointment type is missing but user has dental issues in preferences, set appointmentType to "dentist"
+   - If location is missing, use the user's location from memories (e.g., "Sunnyvale, California" → use "Sunnyvale")
+5. Identify ONLY the critical missing info required to proceed (after applying memory defaults)
+6. Count how many questions have already been asked (check conversationHistory for assistant messages with questions)
+7. Decide whether we should:
+   - Proceed without asking anything (if we can infer/assume defaults from memories)
    - Ask 1 single essential question (if we have asked fewer than 2 questions)
    - Stop asking further questions because the 2-question limit is reached (mark readyForAGI: true)
 
@@ -135,7 +184,7 @@ Respond with JSON:
       messages: [
         {
           role: 'system',
-          content: `You are an ultra-efficient information-gathering agent. Your goal is to collect ONLY the minimum required information to execute the user's task.
+          content: `You are an ultra-efficient information-gathering agent. Your goal is to collect ONLY the minimum required information to execute the user's task.${memoryContext}
 
 ABSOLUTE RULES:
 - TOTAL questions allowed per task: **maximum 2**
@@ -145,6 +194,7 @@ ABSOLUTE RULES:
 - Never ask for confirmations ("Is this correct?")
 - Never ask broad or multi-part questions
 - Never create unnecessary back-and-forth
+- CRITICAL: Use user memories and preferences to fill in missing information automatically. If user has a preferred location in memories, use it as default. If user has appointment preferences, use them.
 
 Always respond with valid JSON only.`
         },
@@ -168,6 +218,30 @@ Always respond with valid JSON only.`
       if (convertedDate) {
         console.log('[Information Gatherer] Converted relative date:', analysis.collectedInfo.date, '→', convertedDate);
         analysis.collectedInfo.date = convertedDate;
+      }
+    }
+
+    // Auto-fill missing information from memories
+    if (memories && memories.length > 0 && analysis.collectedInfo) {
+      const memory = memories[0]; // Use first memory
+      
+      // Auto-fill location from memory preferences if missing
+      if (!analysis.collectedInfo.location && memory.metadata?.preferences?.appointments) {
+        const preferredLocation = memory.metadata.preferences.appointments;
+        console.log('[Information Gatherer] Auto-filling location from memory:', preferredLocation);
+        analysis.collectedInfo.location = preferredLocation.replace(' area', '').replace(' area only', '').trim();
+      }
+      
+      // Auto-fill appointment type if missing but user has dental issues
+      if (!analysis.collectedInfo.appointmentType && memory.metadata?.preferences?.dentalIssues && analysis.taskType === 'bookAppointment') {
+        console.log('[Information Gatherer] Auto-filling appointment type from memory: dentist');
+        analysis.collectedInfo.appointmentType = 'dentist';
+      }
+      
+      // Use memory location as fallback if no location specified
+      if (!analysis.collectedInfo.location && memory.metadata?.location) {
+        console.log('[Information Gatherer] Using memory location as default:', memory.metadata.location);
+        analysis.collectedInfo.location = memory.metadata.location.split(',')[0].trim(); // Just the city name
       }
     }
 
@@ -195,6 +269,8 @@ Always respond with valid JSON only.`
     if (analysis.missingFields && analysis.missingFields.length > 0 && !hasReachedLimit) {
       const questionPrompt = `The user wants to ${analysis.taskType}. 
 We still need: ${analysis.missingFields.join(', ')}.
+
+${memoryContext}
 
 Current conversation:
 ${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n') || 'No previous conversation'}
@@ -225,7 +301,7 @@ Respond with JSON:
         messages: [
           {
             role: 'system',
-            content: `You are an ultra-efficient information-gathering agent. Your goal is to ask ONLY the minimum required questions.
+            content: `You are an ultra-efficient information-gathering agent. Your goal is to ask ONLY the minimum required questions.${memoryContext}
 
 ABSOLUTE RULES:
 - Ask ONLY ONE single, specific question
@@ -234,6 +310,7 @@ ABSOLUTE RULES:
 - Never ask for multiple things
 - Never ask for confirmations
 - If the missing information is not critical or can be inferred, mark readyForAGI: true instead of asking
+- CRITICAL: Use user memories and preferences to fill in missing information automatically. If user has a preferred location in memories (e.g., "Sunnyvale area"), use it as default instead of asking. If user has appointment preferences, use them.
 
 Always respond with valid JSON only.`
           },

@@ -10,19 +10,95 @@ const scheduleDentist = require("../tools/scheduleDentist");
 const cancelSubscription = require("../tools/cancelSubscription");
 const disputeCharge = require("../tools/disputeCharge");
 const { gatherInformation, formatAGIPrompt } = require("./informationGatherer");
+const fs = require('fs');
+const path = require('path');
+
+const MEMORIES_FILE = path.join(__dirname, '../data/memories.json');
 
 /**
- * Formats a structured prompt for searchBestOptions with conversation history and collected information
+ * Loads all memories from JSON file for context
+ * @param {string} userId - User ID (optional, for filtering)
+ * @returns {Array} Array of user memories
+ */
+function loadUserMemories(userId) {
+  try {
+    // Read and parse the memories JSON file
+    if (!fs.existsSync(MEMORIES_FILE)) {
+      console.log('[Agent Router] Memories file not found:', MEMORIES_FILE);
+      return [];
+    }
+    
+    const fileContent = fs.readFileSync(MEMORIES_FILE, 'utf8');
+    const allMemories = JSON.parse(fileContent);
+    
+    // Filter by userId if provided, otherwise return all active memories
+    if (userId) {
+      const userMemories = allMemories.filter(m => m.userId === userId && m.active !== false);
+      console.log(`[Agent Router] Loaded ${userMemories.length} memories for user ${userId} from ${allMemories.length} total memories`);
+      return userMemories;
+    } else {
+      // Return all active memories if no userId specified
+      const activeMemories = allMemories.filter(m => m.active !== false);
+      console.log(`[Agent Router] Loaded ${activeMemories.length} active memories from ${allMemories.length} total memories`);
+      return activeMemories;
+    }
+  } catch (error) {
+    console.error('[Agent Router] Error loading memories:', error);
+    return [];
+  }
+}
+
+/**
+ * Formats user memories into a context string
+ * @param {Array} memories - Array of memory objects
+ * @returns {string} Formatted memory context
+ */
+function formatMemoryContext(memories) {
+  if (!memories || memories.length === 0) return '';
+  
+  let context = 'USER MEMORIES & PREFERENCES:\n';
+  memories.forEach((memory) => {
+    if (memory.description) {
+      context += `- ${memory.title || 'Memory'}: ${memory.description}\n`;
+    }
+    if (memory.metadata) {
+      if (memory.metadata.location) {
+        context += `  Location: ${memory.metadata.location}\n`;
+      }
+      if (memory.metadata.frequentLocations && memory.metadata.frequentLocations.length > 0) {
+        context += `  Frequent Locations: ${memory.metadata.frequentLocations.join(', ')}\n`;
+      }
+      if (memory.metadata.preferences) {
+        Object.entries(memory.metadata.preferences).forEach(([key, value]) => {
+          context += `  ${key}: ${value}\n`;
+        });
+      }
+    }
+  });
+  context += '\n';
+  return context;
+}
+
+/**
+ * Formats a structured prompt for searchBestOptions with conversation history, collected information, and user memories
  * Similar to how runLifePilotAgent receives structured input
  * @param {string} userInput - Current user input
  * @param {Array} conversationHistory - Previous conversation messages
  * @param {Object} collectedInfo - Collected information from information gatherer
  * @param {string} taskType - Type of task (bookAppointment, comparePrices, etc.)
+ * @param {Array} memories - User memories for context
  * @returns {string} Formatted prompt with context
  */
-function formatSearchBookingPrompt(userInput, conversationHistory = [], collectedInfo = {}, taskType = '') {
+function formatSearchBookingPrompt(userInput, conversationHistory = [], collectedInfo = {}, taskType = '', memories = []) {
   // Build conversation context
   let prompt = '';
+  
+  // Add user memories first for context
+  const memoryContext = formatMemoryContext(memories);
+  console.log("[Agent Router] Memory context:", memoryContext);
+  if (memoryContext) {
+    prompt += memoryContext;
+  }
   
   // Add conversation history context if available
   if (conversationHistory && conversationHistory.length > 0) {
@@ -88,7 +164,7 @@ const AGENT_TIMEOUT = 15000; // 15 seconds timeout for primary agents
  * @param {boolean} isFallback - Whether this is a fallback call
  * @returns {Promise<Object>} Conversational response
  */
-async function conversationalAgent(userInput, openai, isFallback = false, conversationHistory = []) {
+async function conversationalAgent(userInput, openai, isFallback = false, conversationHistory = [], memories = []) {
   console.log("[Conversational Agent] Processing query:", userInput);
   console.log("[Conversational Agent] Conversation history length:", conversationHistory.length);
   if (conversationHistory.length > 0) {
@@ -114,6 +190,9 @@ async function conversationalAgent(userInput, openai, isFallback = false, conver
     
     console.log("[Conversational Agent] Processed conversation messages:", conversationMessages.length);
 
+    // Format memory context for system prompt
+    const memoryContext = memories.length > 0 ? formatMemoryContext(memories) : '';
+console.log("[Conversational Agent] Memory context>>>>:", memoryContext);
     const apiPromise = openai.chat.completions.create({
       model: OPENAI_MODEL,
       messages: [
@@ -121,11 +200,15 @@ async function conversationalAgent(userInput, openai, isFallback = false, conver
           role: "system",
           content: `You are LifePilot, an AI assistant that helps manage life's boring tasks. You're friendly, conversational, and helpful.
 
+${memoryContext}
+
 IMPORTANT RULES:
 - NEVER provide wrong information or make assumptions about missing details
 - ALWAYS ask for required information before proceeding with tasks
 - Ask ONE question at a time in a natural, conversational way
 - Be friendly and helpful, but don't proceed until you have all necessary information
+- Use the user's memories and preferences to provide personalized responses and make intelligent defaults
+- If the user mentions something related to their stored preferences (location, interests, etc.), use that information
 
 DATE HANDLING:
 - When users say "tonight", "today", "tomorrow", "this week", "next week", etc., DO NOT ask them to provide a specific date
@@ -239,8 +322,8 @@ CRITICAL: If you don't have all required information, ask for it. Never guess or
           maxWaitTime: 600000,
           conversationHistory: conversationHistory,
         };
-        // Format structured prompt with conversation history for fallback
-        const formattedPrompt = formatSearchBookingPrompt(userInput, conversationHistory, {}, '');
+        // Format structured prompt with conversation history and memories for fallback
+        const formattedPrompt = formatSearchBookingPrompt(userInput, conversationHistory, {}, '', memories);
         const agiResult = await searchBestOptions(formattedPrompt, agiOptions);
         return {
           ...agiResult,
@@ -313,12 +396,12 @@ CRITICAL: If you don't have all required information, ask for it. Never guess or
   }
 }
 
-async function openAISearchAgent(userInput, openai, conversationHistory = []) {
+async function openAISearchAgent(userInput, openai, conversationHistory = [], memories = []) {
   console.log("[OpenAI Search Agent] Fallback agent activated");
   console.log("[OpenAI Search Agent] Query:", userInput);
 
   // Use the conversational agent for fallback
-  return await conversationalAgent(userInput, openai, true, conversationHistory);
+  return await conversationalAgent(userInput, openai, true, conversationHistory, memories);
 }
 
 /**
@@ -339,6 +422,27 @@ function withTimeout(agentPromise, timeoutMs) {
 async function routeAgent(userInput, openai, options = {}) {
   const { userId, pollInterval, maxWaitTime, conversationHistory = [] } = options;
 
+  // Load user memories for context - ensure it's always defined
+  let userMemories = [];
+  try {
+    if (userId) {
+      userMemories = loadUserMemories(userId);
+      console.log(`[Agent Router] Loaded ${userMemories.length} memories for user ${userId}`);
+      if (userMemories.length > 0) {
+        console.log(`[Agent Router] Memory details:`, userMemories.map(m => ({
+          title: m.title,
+          location: m.metadata?.location,
+          preferences: m.metadata?.preferences
+        })));
+      }
+    } else {
+      console.log('[Agent Router] No userId provided, skipping memory load');
+    }
+  } catch (memoryError) {
+    console.error('[Agent Router] Error loading memories, using empty array:', memoryError);
+    userMemories = [];
+  }
+
   // For simple greetings, return immediately without any additional processing
   const simpleGreetings =
     /^(hi|hello|hey|greetings|good morning|good afternoon|good evening|thanks|thank you|bye|goodbye)$/i;
@@ -348,7 +452,7 @@ async function routeAgent(userInput, openai, options = {}) {
     console.log(
       "[Agent Router] Simple greeting detected, fast conversational response only"
     );
-    return await conversationalAgent(userInput, openai, false, conversationHistory);
+    return await conversationalAgent(userInput, openai, false, conversationHistory, userMemories);
   }
 
   // Define agent capabilities for intent-based routing
@@ -466,8 +570,8 @@ async function routeAgent(userInput, openai, options = {}) {
       case "subscription":
         console.log("[Agent Router] Checking information for subscription cancellation");
         
-        // Check if we have all required information
-        const subInfoCheck = await gatherInformation(userInput, conversationHistory, openai);
+        // Check if we have all required information (with user memories)
+        const subInfoCheck = await gatherInformation(userInput, conversationHistory, openai, userMemories);
         
         if (!subInfoCheck.ready) {
           // Information is missing - ask questions conversationally
@@ -491,7 +595,7 @@ async function routeAgent(userInput, openai, options = {}) {
             };
           } else {
             // Use conversational agent to ask questions
-            return await conversationalAgent(userInput, openai, false, conversationHistory);
+            return await conversationalAgent(userInput, openai, false, conversationHistory, userMemories);
           }
         }
         
@@ -510,8 +614,8 @@ async function routeAgent(userInput, openai, options = {}) {
       case "searchBooking":
         console.log("[Agent Router] 🔵 Checking information for search/booking task");
         
-        // First, check if we have all required information
-        const infoCheck = await gatherInformation(userInput, conversationHistory, openai);
+        // First, check if we have all required information (with user memories)
+        const infoCheck = await gatherInformation(userInput, conversationHistory, openai, userMemories);
         
         if (!infoCheck.ready) {
           // Information is missing - ask questions conversationally
@@ -535,7 +639,7 @@ async function routeAgent(userInput, openai, options = {}) {
             };
           } else {
             // Use conversational agent to ask questions
-            return await conversationalAgent(userInput, openai, false, conversationHistory);
+            return await conversationalAgent(userInput, openai, false, conversationHistory, userMemories);
           }
         }
         
@@ -545,7 +649,8 @@ async function routeAgent(userInput, openai, options = {}) {
           userInput,
           conversationHistory,
           infoCheck.collectedInfo,
-          infoCheck.taskType
+          infoCheck.taskType,
+          userMemories
         );
         console.log("[Agent Router] Formatted structured prompt:", formattedPrompt);
         
@@ -601,7 +706,7 @@ async function routeAgent(userInput, openai, options = {}) {
       case "conversational":
       default:
         console.log("[Agent Router] Routing to conversational agent");
-        return await conversationalAgent(userInput, openai, false, conversationHistory);
+        return await conversationalAgent(userInput, openai, false, conversationHistory, userMemories);
     }
   } catch (error) {
     console.error(
@@ -625,8 +730,8 @@ async function routeAgent(userInput, openai, options = {}) {
         pollInterval: options.pollInterval || 5000,
         maxWaitTime: options.maxWaitTime || 600000,
       };
-      // Check information before routing
-      const infoCheck = await gatherInformation(userInput, conversationHistory, openai);
+      // Check information before routing (with user memories)
+      const infoCheck = await gatherInformation(userInput, conversationHistory, openai, userMemories);
       
       if (!infoCheck.ready && infoCheck.question) {
         return {
@@ -649,13 +754,24 @@ async function routeAgent(userInput, openai, options = {}) {
       }
       
       try {
-        // Format structured prompt with conversation history and collected info
+        // Format structured prompt with conversation history, collected info, and memories
         const formattedPrompt = infoCheck.ready 
-          ? formatSearchBookingPrompt(userInput, conversationHistory, infoCheck.collectedInfo, infoCheck.taskType)
-          : formatSearchBookingPrompt(userInput, conversationHistory, {}, '');
+          ? formatSearchBookingPrompt(userInput, conversationHistory, infoCheck.collectedInfo, infoCheck.taskType, userMemories)
+          : formatSearchBookingPrompt(userInput, conversationHistory, {}, '', userMemories);
         // Include conversation history in options
         agiOptions.conversationHistory = conversationHistory;
-        const result = await searchBestOptions(formattedPrompt, agiOptions);
+        // Route to appropriate function based on task type
+        let result;
+        if (infoCheck.taskType === 'bookAppointment' || userInput.toLowerCase().includes('book') || userInput.toLowerCase().includes('appointment')) {
+          const { appointmentType, date, time, location } = infoCheck.collectedInfo || {};
+          result = await bookAppointment(
+            appointmentType || 'appointment',
+            { date, time, location },
+            agiOptions
+          );
+        } else {
+          result = await searchBestOptions(formattedPrompt, agiOptions);
+        }
         return {
           ...result,
           routedAgent: "searchBooking",
@@ -672,7 +788,7 @@ async function routeAgent(userInput, openai, options = {}) {
     
     // Only fallback to conversational agent for non-search/booking queries
     console.log("[Agent Router] Falling back to conversational agent");
-    return await conversationalAgent(userInput, openai, false, conversationHistory);
+    return await conversationalAgent(userInput, openai, false, conversationHistory, userMemories);
   }
 }
 
