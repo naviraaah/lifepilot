@@ -1,0 +1,596 @@
+const axios = require('axios');
+const path = require('path');
+
+// Load environment variables from backend/.env
+// Try to load dotenv if available (it might already be loaded by backend/index.js)
+try {
+  require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
+} catch (e) {
+  // dotenv might already be loaded or not available
+}
+
+// Configuration
+const AGI_API_KEY = process.env.AGI_API_KEY || 'No-key';
+const BASE_URL = 'https://api.agi.tech/v1';
+
+// Validate API key
+if (!AGI_API_KEY || AGI_API_KEY === 'your_api_key') {
+  console.warn('Warning: AGI_API_KEY is not set or is using default value');
+}
+
+// Helper function to sleep
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Creates a new AGI session
+ * @param {string} agentName - Agent name (default: 'agi-0')
+ * @returns {Promise<string>} Session ID
+ */
+async function createSession(agentName = 'agi-0') {
+  if (!AGI_API_KEY || AGI_API_KEY === 'No-key') {
+    throw new Error('AGI_API_KEY is not configured. Please set AGI_API_KEY in your .env file.');
+  }
+
+  try {
+    console.log('Creating session...');
+    console.log(`Using API key: ${AGI_API_KEY.substring(0, 10)}...${AGI_API_KEY.substring(AGI_API_KEY.length - 4)}`);
+    const response = await axios.post(
+      `${BASE_URL}/sessions`,
+      { agent_name: agentName },
+      {
+        headers: {
+          'Authorization': `Bearer ${AGI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    return response.data.session_id;
+  } catch (error) {
+    const errorDetails = error.response?.data || error.message;
+    const statusCode = error.response?.status;
+    
+    console.error('Error creating session:', {
+      status: statusCode,
+      data: errorDetails,
+      message: error.message
+    });
+    
+    if (statusCode === 401) {
+      throw new Error('Authentication failed. Please check your AGI_API_KEY in the .env file. The API key may be invalid or expired.');
+    }
+    
+    throw new Error(`Failed to create session: ${error.message}${statusCode ? ` (Status: ${statusCode})` : ''}`);
+  }
+}
+
+/**
+ * Sends a message/task to the agent
+ * @param {string} sessionId - Session ID 
+ * @param {string} message - Task message
+ */
+async function sendMessage(sessionId, message) {
+  try {
+    await axios.post(
+      `${BASE_URL}/sessions/${sessionId}/message`,
+      { message },
+      {
+        headers: {
+          'Authorization': `Bearer ${AGI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error sending message:', error.response?.data || error.message);
+    throw new Error(`Failed to send message: ${error.message}`);
+  }
+}
+
+/**
+ * Gets the status of the session
+ * @param {string} sessionId - Session ID
+ * @returns {Promise<Object>} Status object
+ */
+async function getStatus(sessionId) {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/sessions/${sessionId}/status`,
+      {
+        headers: {
+          'Authorization': `Bearer ${AGI_API_KEY}`
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error getting status:', error.response?.data || error.message);
+    throw new Error(`Failed to get status: ${error.message}`);
+  }
+}
+
+/**
+ * Gets all messages from the session
+ * @param {string} sessionId - Session ID
+ * @returns {Promise<Array>} Array of messages
+ */
+async function getMessages(sessionId) {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/sessions/${sessionId}/messages`,
+      {
+        headers: {
+          'Authorization': `Bearer ${AGI_API_KEY}`
+        }
+      }
+    );
+    return response.data.messages || [];
+  } catch (error) {
+    console.error('Error getting messages:', error.response?.data || error.message);
+    throw new Error(`Failed to get messages: ${error.message}`);
+  }
+}
+
+/**
+ * Deletes a session
+ * @param {string} sessionId - Session ID
+ */
+async function deleteSession(sessionId) {
+  try {
+    await axios.delete(
+      `${BASE_URL}/sessions/${sessionId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${AGI_API_KEY}`
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error deleting session:', error.response?.data || error.message);
+    // Don't throw error on cleanup failure
+  }
+}
+
+/**
+ * Monitors the session until completion
+ * @param {string} sessionId - Session ID
+ * @param {number} pollInterval - Polling interval in milliseconds (default: 2000)
+ * @param {number} maxWaitTime - Maximum wait time in milliseconds (default: 300000 = 5 minutes)
+ * @returns {Promise<Object>} Final status
+ */
+async function monitorSession(sessionId, pollInterval = 2000, maxWaitTime = 300000) {
+  const startTime = Date.now();
+  
+  while (true) {
+    const status = await getStatus(sessionId);
+    
+    if (status.status === 'finished' || status.status === 'error') {
+      return status;
+    }
+    
+    // Check for timeout
+    if (Date.now() - startTime > maxWaitTime) {
+      throw new Error('Session monitoring timeout');
+    }
+    
+    await sleep(pollInterval);
+  }
+}
+
+/**
+ * Main function to run search and booking agent
+ * @param {string} task - The task description (e.g., "Compare prices", "Book appointment")
+ * @param {Object} options - Additional options
+ * @param {number} options.pollInterval - Polling interval in ms (default: 2000)
+ * @param {number} options.maxWaitTime - Max wait time in ms (default: 300000)
+ * @returns {Promise<Object>} Result object with action, summary, and details
+ */
+async function runSearchBookingAgent(task, options = {}) {
+  const { pollInterval = 2000, maxWaitTime = 300000 } = options;
+  let sessionId = null;
+  
+  try {
+    // Validate API key before proceeding
+    if (!AGI_API_KEY || AGI_API_KEY === 'your_api_key') {
+      return {
+        action: 'search_booking',
+        status: 'error',
+        summary: 'AGI_API_KEY is not configured. Please set AGI_API_KEY in backend/.env file.',
+        details: { 
+          error: 'Missing API key',
+          hint: 'Add AGI_API_KEY=your_actual_key to backend/.env'
+        },
+        sessionId: null,
+        task: task
+      };
+    }
+
+    // Create session
+    console.log('Creating AGI session...');
+    console.log(`Using API key: ${AGI_API_KEY.substring(0, 10)}...${AGI_API_KEY.substring(AGI_API_KEY.length - 4)}`);
+    sessionId = await createSession();
+    console.log(`Session created: ${sessionId}`);
+    
+    // Send task
+    console.log('Sending task to agent...');
+    await sendMessage(sessionId, task);
+    
+    // Monitor progress
+    console.log('Monitoring agent progress...');
+    const finalStatus = await monitorSession(sessionId, pollInterval, maxWaitTime);
+    
+    if (finalStatus.status === 'error') {
+      throw new Error(`Agent error: ${finalStatus.error || 'Unknown error'}`);
+    }
+    
+    // Get results
+    console.log('Retrieving results...');
+    const messages = await getMessages(sessionId);
+    
+    // Process results - find DONE message
+    let results = null;
+    let summary = null;
+    
+    for (const msg of messages) {
+      if (msg.type === 'DONE') {
+        results = msg.content;
+        // Try to parse if it's JSON
+        try {
+          results = JSON.parse(msg.content);
+        } catch (e) {
+          // Not JSON, keep as string
+        }
+      } else if (msg.type === 'message' && msg.role === 'assistant') {
+        summary = msg.content;
+      }
+    }
+    
+    return {
+      action: 'search_booking',
+      status: 'completed',
+      summary: summary || 'Task completed successfully',
+      details: results || messages,
+      sessionId: sessionId,
+      task: task
+    };
+    
+  } catch (error) {
+    console.error('Error in search booking agent:', error);
+    return {
+      action: 'search_booking',
+      status: 'error',
+      summary: `Error: ${error.message}`,
+      details: { error: error.message },
+      sessionId: sessionId,
+      task: task
+    };
+  } finally {
+    // Cleanup
+    if (sessionId) {
+      console.log('Cleaning up session...');
+      await deleteSession(sessionId);
+    }
+  }
+}
+
+/**
+ * Search for best options (prices, services, etc.)
+ * @param {string} query - Search query (e.g., "Compare Sony WH-1000XM5 prices on Amazon, Best Buy, and Target")
+ * @param {Object} options - Additional options
+ * @returns {Promise<Object>} Search results
+ */
+async function searchBestOptions(query, options = {}) {
+  const task = `${query}. Return results as JSON with comparison details.`;
+  return await runSearchBookingAgent(task, options);
+}
+
+/**
+ * Book an appointment
+ * @param {string} appointmentType - Type of appointment (e.g., "dentist", "doctor", "haircut")
+ * @param {Object} preferences - Appointment preferences
+ * @param {string} preferences.date - Preferred date
+ * @param {string} preferences.time - Preferred time
+ * @param {string} preferences.location - Preferred location
+ * @param {Object} options - Additional options
+ * @returns {Promise<Object>} Booking result
+ */
+async function bookAppointment(appointmentType, preferences = {}, options = {}) {
+  const { date, time, location } = preferences;
+  let task = `Book a ${appointmentType} appointment`;
+  
+  if (date) task += ` for ${date}`;
+  if (time) task += ` at ${time}`;
+  if (location) task += ` near ${location}`;
+  
+  task += '. Return booking confirmation details as JSON.';
+  
+  return await runSearchBookingAgent(task, options);
+}
+
+/**
+ * Check prices across multiple retailers
+ * @param {string} product - Product name to search for
+ * @param {Array<string>} retailers - Array of retailer names/domains (e.g., ["amazon.com", "bestbuy.com"])
+ * @param {Object} options - Additional options
+ * @param {number} options.pollInterval - Polling interval in ms (default: 2000)
+ * @param {number} options.maxWaitTime - Max wait time in ms (default: 300000)
+ * @returns {Promise<Object>} Price comparison results
+ */
+async function checkPrices(product, retailers, options = {}) {
+  const { pollInterval = 2000, maxWaitTime = 300000 } = options;
+  let sessionId = null;
+
+  // Validate inputs
+  if (!product) {
+    throw new Error('Product name is required');
+  }
+  if (!retailers || !Array.isArray(retailers) || retailers.length === 0) {
+    throw new Error('Retailers array is required and must not be empty');
+  }
+
+  // Validate API key
+  if (!AGI_API_KEY || AGI_API_KEY === 'No-key') {
+    return {
+      action: 'price_comparison',
+      status: 'error',
+      summary: 'AGI_API_KEY is not configured. Please set AGI_API_KEY in backend/.env file.',
+      details: { 
+        error: 'Missing API key',
+        hint: 'Add AGI_API_KEY=your_actual_key to backend/.env'
+      },
+      product: product,
+      retailers: retailers
+    };
+  }
+
+  try {
+    // Create session with fast agent
+    console.log('Creating AGI session with fast agent...');
+    sessionId = await createSession('agi-0-fast');
+    console.log(`Session created: ${sessionId}`);
+
+    // Format retailers list
+    const retailersList = retailers.map(r => `- ${r}`).join('\n');
+
+    // Create detailed task message
+    const message = `
+Compare prices for: ${product}
+
+Check these retailers:
+${retailersList}
+
+For each retailer, provide:
+- Current price
+- Availability (in stock / out of stock)
+- Product URL
+
+Return as JSON array.
+    `.trim();
+
+    // Send task
+    console.log('Sending price comparison task...');
+    await sendMessage(sessionId, message);
+
+    // Monitor progress
+    console.log('Monitoring agent progress...');
+    const startTime = Date.now();
+    
+    while (true) {
+      const status = await getStatus(sessionId);
+      
+      if (status.status === 'finished') {
+        // Get messages
+        const messages = await getMessages(sessionId);
+        
+        // Find DONE message
+        for (const msg of messages) {
+          if (msg.type === 'DONE') {
+            let content = msg.content;
+            
+            // Try to parse JSON
+            try {
+              content = JSON.parse(content);
+            } catch (e) {
+              // Not JSON, keep as string
+            }
+            
+            return {
+              action: 'price_comparison',
+              status: 'completed',
+              summary: `Price comparison completed for ${product}`,
+              details: content,
+              product: product,
+              retailers: retailers,
+              sessionId: sessionId
+            };
+          }
+        }
+        
+        // If no DONE message found, return all messages
+        return {
+          action: 'price_comparison',
+          status: 'completed',
+          summary: `Price comparison completed for ${product}`,
+          details: messages,
+          product: product,
+          retailers: retailers,
+          sessionId: sessionId
+        };
+      } else if (status.status === 'error') {
+        throw new Error('Task failed: ' + (status.error || 'Unknown error'));
+      }
+      
+      // Check for timeout
+      if (Date.now() - startTime > maxWaitTime) {
+        throw new Error('Price comparison timeout');
+      }
+      
+      await sleep(pollInterval);
+    }
+
+  } catch (error) {
+    console.error('Error in price comparison:', error);
+    return {
+      action: 'price_comparison',
+      status: 'error',
+      summary: `Error: ${error.message}`,
+      details: { error: error.message },
+      product: product,
+      retailers: retailers,
+      sessionId: sessionId
+    };
+  } finally {
+    // Cleanup
+    if (sessionId) {
+      console.log('Cleaning up session...');
+      await deleteSession(sessionId);
+    }
+  }
+}
+
+/**
+ * Research product specifications, prices, and reviews
+ * @param {string} productName - Product name to research
+ * @param {Object} options - Additional options
+ * @param {number} options.pollInterval - Polling interval in ms (default: 2000)
+ * @param {number} options.maxWaitTime - Max wait time in ms (default: 300000)
+ * @returns {Promise<Object>} Research results
+ */
+async function researchProduct(productName, options = {}) {
+  const { pollInterval = 2000, maxWaitTime = 300000 } = options;
+  let sessionId = null;
+
+  // Validate input
+  if (!productName) {
+    throw new Error('Product name is required');
+  }
+
+  // Validate API key
+  if (!AGI_API_KEY || AGI_API_KEY === 'No-key') {
+    return {
+      action: 'product_research',
+      status: 'error',
+      summary: 'AGI_API_KEY is not configured. Please set AGI_API_KEY in backend/.env file.',
+      details: { 
+        error: 'Missing API key',
+        hint: 'Add AGI_API_KEY=your_actual_key to backend/.env'
+      },
+      productName: productName
+    };
+  }
+
+  try {
+    // Create session with agi-0 agent
+    console.log('Creating AGI session for product research...');
+    sessionId = await createSession('agi-0');
+    console.log(`Session created: ${sessionId}`);
+
+    // Create research message with exact format from Python code
+    const message = `
+Research: ${productName}
+
+Gather:
+
+1. Specifications and key features
+
+2. Current prices across 3-5 retailers
+
+3. Average rating and review summary
+
+4. Availability status
+
+Return as JSON with all information.
+    `.trim();
+
+    // Send task
+    console.log('Sending product research task...');
+    await sendMessage(sessionId, message);
+
+    // Wait for completion
+    console.log('Monitoring agent progress...');
+    const startTime = Date.now();
+    
+    while (true) {
+      const status = await getStatus(sessionId);
+      
+      if (status.status === 'finished') {
+        // Get messages
+        const messages = await getMessages(sessionId);
+        
+        // Find DONE message
+        for (const msg of messages) {
+          if (msg.type === 'DONE') {
+            let content = msg.content;
+            
+            // Try to parse JSON
+            try {
+              content = JSON.parse(content);
+            } catch (e) {
+              // Not JSON, keep as string
+            }
+            
+            return {
+              action: 'product_research',
+              status: 'completed',
+              summary: `Product research completed for ${productName}`,
+              details: content,
+              productName: productName,
+              sessionId: sessionId
+            };
+          }
+        }
+        
+        // If no DONE message found, return all messages
+        return {
+          action: 'product_research',
+          status: 'completed',
+          summary: `Product research completed for ${productName}`,
+          details: messages,
+          productName: productName,
+          sessionId: sessionId
+        };
+      } else if (status.status === 'error') {
+        throw new Error('Task failed: ' + (status.error || 'Unknown error'));
+      }
+      
+      // Check for timeout
+      if (Date.now() - startTime > maxWaitTime) {
+        throw new Error('Product research timeout');
+      }
+      
+      await sleep(pollInterval);
+    }
+
+  } catch (error) {
+    console.error('Error in product research:', error);
+    return {
+      action: 'product_research',
+      status: 'error',
+      summary: `Error: ${error.message}`,
+      details: { error: error.message },
+      productName: productName,
+      sessionId: sessionId
+    };
+  } finally {
+    // Cleanup
+    if (sessionId) {
+      console.log('Cleaning up session...');
+      await deleteSession(sessionId);
+    }
+  }
+}
+
+module.exports = {
+  runSearchBookingAgent,
+  searchBestOptions,
+  bookAppointment,
+  checkPrices,
+  researchProduct,
+  createSession,
+  sendMessage,
+  getStatus,
+  getMessages,
+  deleteSession,
+  monitorSession
+};
+

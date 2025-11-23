@@ -1,0 +1,14 @@
+{
+  "name": "lifepilot",
+  "version": "1.0.0",
+  "description": "AI-powered personal assistant for managing daily tasks",
+  "private": true,
+  "scripts": {
+    "backend:dev": "cd backend && npm run dev",
+    "backend:start": "cd backend && npm start"
+  },
+  "dependencies": {
+    "axios": "^1.13.2"
+  }
+}
+

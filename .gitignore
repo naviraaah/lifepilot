@@ -16,6 +16,9 @@ node_modules/
 .env.production.local
 .env*.local
 
+# Backend environment variables
+backend/.env
+
 # Next.js
 .next/
 out/
