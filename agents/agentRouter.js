@@ -211,12 +211,6 @@ function withTimeout(agentPromise, timeoutMs) {
 async function routeAgent(userInput, openai, options = {}) {
   const { userId, pollInterval, maxWaitTime } = options;
 
-  // ALWAYS start with conversational agent for fast response
-  // This ensures users never wait - we give them an immediate conversational reply
-  console.log(
-    "[Agent Router] Using conversational agent for immediate response"
-  );
-
   // For simple greetings, return immediately without any additional processing
   const simpleGreetings =
     /^(hi|hello|hey|greetings|good morning|good afternoon|good evening|thanks|thank you|bye|goodbye)$/i;
@@ -229,10 +223,130 @@ async function routeAgent(userInput, openai, options = {}) {
     return await conversationalAgent(userInput, openai, false);
   }
 
-  // For all other messages, get conversational response immediately
-  // The conversational agent will handle everything conversationally
-  // This ensures users always get a fast response without waiting
-  return await conversationalAgent(userInput, openai, false);
+  // Define agent capabilities for intent-based routing
+  const agentCapabilities = {
+    dentist: {
+      name: "Dentist Appointment Agent",
+      description:
+        "Handles dentist appointment scheduling, booking, and management",
+      keywords: [
+        "dentist",
+        "dental",
+        "appointment",
+        "schedule",
+        "teeth",
+        "tooth",
+        "cleaning",
+        "checkup",
+        "oral",
+      ],
+    },
+    subscription: {
+      name: "Subscription Management Agent",
+      description: "Handles subscription cancellations and management",
+      keywords: [
+        "cancel",
+        "subscription",
+        "membership",
+        "renewal",
+        "unsubscribe",
+      ],
+    },
+    dispute: {
+      name: "Charge Dispute Agent",
+      description: "Handles credit card charge disputes and fraud claims",
+      keywords: [
+        "dispute",
+        "charge",
+        "fraud",
+        "unauthorized",
+        "refund",
+        "transaction",
+      ],
+    },
+    searchBooking: {
+      name: "Search and Booking Agent",
+      description:
+        "Handles general search, price comparison, product research, and booking tasks",
+      keywords: [
+        "search",
+        "find",
+        "compare",
+        "price",
+        "book",
+        "research",
+        "product",
+        "restaurant",
+        "haircut",
+      ],
+    },
+    conversational: {
+      name: "Conversational Agent",
+      description: "Handles general conversation, questions, and chat",
+      keywords: [
+        "question",
+        "help",
+        "what",
+        "how",
+        "why",
+        "explain",
+        "tell me",
+      ],
+    },
+  };
+
+  // Analyze user intent to determine which agent to use
+  try {
+    console.log("[Agent Router] Analyzing user intent...");
+    const intentAnalysis = await analyzeUserIntent(
+      userInput,
+      agentCapabilities,
+      openai
+    );
+
+    console.log(`[Agent Router] Intent analysis:`, {
+      agent: intentAnalysis.agent,
+      intent: intentAnalysis.intent,
+      confidence: intentAnalysis.confidence,
+    });
+
+    // Route to appropriate agent based on intent
+    switch (intentAnalysis.agent) {
+      case "dentist":
+        console.log(
+          "[Agent Router] Routing to LifePilot agent for dentist appointment"
+        );
+        return await runLifePilotAgent(userInput, openai);
+
+      case "subscription":
+        console.log(
+          "[Agent Router] Routing to LifePilot agent for subscription cancellation"
+        );
+        return await runLifePilotAgent(userInput, openai);
+
+      case "dispute":
+        console.log(
+          "[Agent Router] Routing to LifePilot agent for charge dispute"
+        );
+        return await runLifePilotAgent(userInput, openai);
+
+      case "searchBooking":
+        console.log("[Agent Router] Routing to search booking agent");
+        return await runSearchBookingAgent(userInput, options);
+
+      case "conversational":
+      default:
+        console.log("[Agent Router] Routing to conversational agent");
+        return await conversationalAgent(userInput, openai, false);
+    }
+  } catch (error) {
+    console.error(
+      "[Agent Router] Error in intent analysis, falling back to conversational agent:",
+      error
+    );
+    // Fallback to conversational agent if intent analysis fails
+    return await conversationalAgent(userInput, openai, false);
+  }
 }
 
 /**
