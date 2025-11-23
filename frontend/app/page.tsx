@@ -1,33 +1,127 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { sendAgentRequest, AgentResponse } from '../lib/api';
 import styles from './page.module.css';
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  isLoading?: boolean;
+  error?: string;
+  details?: any;
+  routedAgent?: string;
+}
+
 export default function Home() {
   const [input, setInput] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [response, setResponse] = useState<AgentResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = 'demo_user_123';
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || actionLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input.trim(),
+      timestamp: new Date()
+    };
+
+    // Add user message to chat
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Clear input
+    const currentInput = input.trim();
+    setInput('');
+    setActionLoading(true);
+
+    // Add loading message
+    const loadingMessageId = (Date.now() + 1).toString();
+    const loadingMessage: ChatMessage = {
+      id: loadingMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      isLoading: true
+    };
+    setMessages(prev => [...prev, loadingMessage]);
 
     try {
-      setActionLoading(true);
-      setError(null);
-      setResponse(null);
-      
       // Call unified agent API - it will automatically route to the right agent
-      const result = await sendAgentRequest(input, userId);
-      setResponse(result);
+      const result = await sendAgentRequest(currentInput, userId);
+      
+      // Check if the result indicates an error
+      if (result.status === 'error' || result.error) {
+        const errorMessage = result.summary || result.error || 'Something went wrong. Please try again.';
+        
+        // Update loading message with error
+        setMessages(prev => prev.map(msg => 
+          msg.id === loadingMessageId 
+            ? {
+                id: loadingMessageId,
+                role: 'assistant',
+                content: errorMessage,
+                timestamp: new Date(),
+                error: errorMessage,
+                isLoading: false
+              }
+            : msg
+        ));
+      } else {
+        // Remove loading message and add AI response
+        setMessages(prev => prev.map(msg => 
+          msg.id === loadingMessageId 
+            ? {
+                id: loadingMessageId,
+                role: 'assistant',
+                content: result.summary || result.details?.response || 'I received your message.',
+                timestamp: new Date(),
+                details: result.details,
+                routedAgent: result.routedAgent,
+                isLoading: false
+              }
+            : msg
+        ));
+      }
     } catch (err: any) {
       console.error('Error calling agent:', err);
-      setError(err.response?.data?.error || err.message || 'Failed to process request. Please try again.');
+      let errorMessage = 'Failed to process request. Please try again.';
+      
+      if (err.response?.data?.summary) {
+        // Use the summary from backend if available
+        errorMessage = err.response.data.summary;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Update loading message with error
+      setMessages(prev => prev.map(msg => 
+        msg.id === loadingMessageId 
+          ? {
+              id: loadingMessageId,
+              role: 'assistant',
+              content: errorMessage,
+              timestamp: new Date(),
+              error: errorMessage,
+              isLoading: false
+            }
+          : msg
+      ));
     } finally {
       setActionLoading(false);
     }
@@ -43,6 +137,8 @@ export default function Home() {
       }
     }, 100);
   };
+
+  const hasMessages = messages.length > 0;
 
   return (
     <div className={styles.page}>
@@ -67,11 +163,48 @@ export default function Home() {
       {/* Main Content */}
       <main className={styles.main}>
         <div className={styles.content}>
-          {/* Greeting */}
-          <div className={styles.greeting}>
-            <h1>What can I help you with?</h1>
-            <p>Tell me what you need, and I'll handle it for you</p>
-          </div>
+          {/* Greeting - only show when no messages */}
+          {!hasMessages && (
+            <div className={styles.greeting}>
+              <h1>What can I help you with?</h1>
+              <p>Tell me what you need, and I'll handle it for you</p>
+            </div>
+          )}
+
+          {/* Chat Thread */}
+          {hasMessages && (
+            <div className={styles.chatThread}>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`${styles.chatMessage} ${message.role === 'user' ? styles.userMessage : styles.assistantMessage}`}
+                >
+                  {message.role === 'assistant' && (
+                    <div className={styles.messageAvatar}>🤖</div>
+                  )}
+                  <div className={styles.messageContent}>
+                    {message.isLoading ? (
+                      <div className={styles.loadingMessage}>
+                        <span className={styles.loadingDot}></span>
+                        <span className={styles.loadingDot}></span>
+                        <span className={styles.loadingDot}></span>
+                      </div>
+                    ) : message.error ? (
+                      <div className={styles.errorMessage}>
+                        <p>{message.content}</p>
+                      </div>
+                    ) : (
+                      <p>{message.content}</p>
+                    )}
+                  </div>
+                  {message.role === 'user' && (
+                    <div className={styles.userAvatar}>👤</div>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
 
           {/* Main Input */}
           <form onSubmit={handleSubmit} className={styles.inputForm}>
@@ -79,14 +212,14 @@ export default function Home() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Schedule a dentist appointment near me..."
+              placeholder={hasMessages ? "Type your message..." : "Schedule a dentist appointment near me..."}
               className={styles.mainInput}
               disabled={actionLoading}
               autoFocus
             />
             <button 
               type="submit" 
-              className={styles.submitButton}
+              className={`${styles.submitButton} ${input.trim() && !actionLoading ? styles.submitButtonEnabled : ''}`}
               disabled={actionLoading || !input.trim()}
               aria-label="Submit"
             >
@@ -100,101 +233,8 @@ export default function Home() {
             </button>
           </form>
 
-          {/* Error Display */}
-          {error && (
-            <div className={styles.errorBox}>
-              <h3>❌ Error</h3>
-              <p>{error}</p>
-              <button onClick={() => { setError(null); setResponse(null); }} className={styles.clearButton}>
-                Clear
-              </button>
-            </div>
-          )}
-
-          {/* Response Display */}
-          {response && (
-            <div className={styles.responseBox}>
-              <div className={styles.responseHeader}>
-                <h3>✅ Agent Response</h3>
-                <button onClick={() => setResponse(null)} className={styles.clearButton}>
-                  ✕
-                </button>
-              </div>
-              
-              {/* Agent Routing Info */}
-              <div className={styles.agentInfo}>
-                <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Routed Agent:</span>
-                  <span className={styles.infoValue}>{response.routedAgent || response.action || 'N/A'}</span>
-                </div>
-                {response.intent && (
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Intent:</span>
-                    <span className={styles.infoValue}>{response.intent}</span>
-                  </div>
-                )}
-                {response.confidence !== undefined && (
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Confidence:</span>
-                    <span className={styles.infoValue}>{(response.confidence * 100).toFixed(0)}%</span>
-                  </div>
-                )}
-                {response.status && (
-                  <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Status:</span>
-                    <span className={styles.infoValue}>{response.status}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Summary */}
-              {response.summary && (
-                <div className={styles.summaryBox}>
-                  <h4>Summary</h4>
-                  <p>{response.summary}</p>
-                </div>
-              )}
-
-              {/* Details */}
-              {response.details && (
-                <div className={styles.detailsBox}>
-                  <h4>Details</h4>
-                  <pre className={styles.detailsContent}>
-                    {typeof response.details === 'string' 
-                      ? response.details 
-                      : JSON.stringify(response.details, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {/* Additional Info */}
-              {(response.product || response.productName || response.retailers) && (
-                <div className={styles.additionalInfo}>
-                  {response.product && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Product:</span>
-                      <span className={styles.infoValue}>{response.product}</span>
-                    </div>
-                  )}
-                  {response.productName && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Product:</span>
-                      <span className={styles.infoValue}>{response.productName}</span>
-                    </div>
-                  )}
-                  {response.retailers && response.retailers.length > 0 && (
-                    <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Retailers:</span>
-                      <span className={styles.infoValue}>{response.retailers.join(', ')}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          {!response && !error && (
+          {/* Quick Actions - only show when no messages */}
+          {!hasMessages && (
             <div className={styles.quickActions}>
               <p className={styles.quickActionsLabel}>Not sure where to start? Try one of these:</p>
               <div className={styles.quickActionGrid}>
@@ -267,9 +307,11 @@ export default function Home() {
           )}
 
           {/* Footer Info */}
-          <div className={styles.footerInfo}>
-            <p>Built with AGI, OpenAI GPT-5.1 · Autonomous Agent Infrastructure</p>
-          </div>
+          {!hasMessages && (
+            <div className={styles.footerInfo}>
+              <p>Built with AGI, OpenAI GPT-4 · Autonomous Agent Infrastructure</p>
+            </div>
+          )}
         </div>
       </main>
     </div>

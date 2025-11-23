@@ -44,16 +44,54 @@ app.post('/api/agent', async (req, res) => {
       return res.status(400).json({ error: 'Input is required' });
     }
 
+    // Validate OpenAI API key
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set');
+      return res.status(500).json({ 
+        error: 'OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file.' 
+      });
+    }
+
     const options = { userId };
     if (pollInterval) options.pollInterval = pollInterval;
     if (maxWaitTime) options.maxWaitTime = maxWaitTime;
 
     // Route to appropriate agent based on context analysis
     const result = await routeAgent(input, openai, options);
+    
+    // Ensure we always return a valid response
+    if (!result) {
+      return res.status(500).json({ 
+        error: 'No response from agent',
+        action: 'conversation',
+        summary: "I'm having trouble processing that. Please try again!",
+        routedAgent: 'conversational'
+      });
+    }
+    
     res.json(result);
   } catch (error) {
     console.error('Unified agent error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error stack:', error.stack);
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'An unexpected error occurred';
+    if (error.message && error.message.includes('API key')) {
+      errorMessage = 'OpenAI API key is invalid or missing. Please check your configuration.';
+    } else if (error.message && error.message.includes('timeout')) {
+      errorMessage = 'The request timed out. Please try again.';
+    } else if (error.message && error.message.includes('model')) {
+      errorMessage = 'Invalid OpenAI model configuration. Please check your OPENAI_MODEL setting.';
+    }
+    
+    // Return error in a format the frontend expects
+    res.status(500).json({ 
+      error: errorMessage,
+      action: 'conversation',
+      status: 'error',
+      summary: errorMessage,
+      routedAgent: 'conversational'
+    });
   }
 });
 

@@ -7,6 +7,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 45000, // 45 second timeout to allow for OpenAI API calls
 });
 
 export interface AgentResponse {
@@ -60,13 +61,22 @@ export const sendAgentRequest = async (
   pollInterval?: number, 
   maxWaitTime?: number
 ): Promise<AgentResponse> => {
-  const response = await api.post('/api/agent', { 
-    input, 
-    userId, 
-    pollInterval, 
-    maxWaitTime 
-  });
-  return response.data;
+  try {
+    const response = await api.post('/api/agent', { 
+      input, 
+      userId, 
+      pollInterval, 
+      maxWaitTime 
+    });
+    return response.data;
+  } catch (error: any) {
+    // Handle timeout errors more gracefully
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      throw new Error('The request is taking longer than expected. Please try again.');
+    }
+    // Re-throw other errors
+    throw error;
+  }
 };
 
 // Legacy agent endpoint (kept for backward compatibility)
