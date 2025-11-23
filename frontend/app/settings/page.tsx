@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getUser, updateUser, linkEmail, linkPhone } from '../../lib/api';
@@ -9,41 +9,99 @@ import styles from './settings.module.css';
 
 export default function Settings() {
   const router = useRouter();
+  const pathname = usePathname();
   const userId = 'demo_user_123';
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>({
+    id: userId,
+    name: 'Liam',
+    email: 'liam.anderson@email.com',
+    phone: '+1 (415) 555-7890',
+    preferences: {
+      notificationEmail: true,
+      notificationSMS: true,
+      autoApproveAfterTraining: false,
+      trainingRounds: 8
+    },
+    trustLevel: 'training',
+    linkedAccounts: {
+      email: { linked: true, provider: 'Gmail' },
+      phone: { linked: true, verified: true },
+      calendar: { linked: false, provider: null }
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+  const initialFormData = {
+    name: 'Liam',
+    email: 'liam.anderson@email.com',
+    phone: '+1 (415) 555-7890',
     preferences: {
       notificationEmail: true,
       notificationSMS: true,
       autoApproveAfterTraining: false
     }
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
+  const [originalFormData, setOriginalFormData] = useState(initialFormData);
 
   useEffect(() => {
     loadUser();
   }, []);
+
+  // Check if form has changes
+  const hasChanges = JSON.stringify(formData) !== JSON.stringify(originalFormData);
 
   const loadUser = async () => {
     try {
       setLoading(true);
       const userData = await getUser(userId);
       setUser(userData);
-      setFormData({
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone || '',
-        preferences: userData.preferences
-      });
+      const loadedFormData = {
+        name: userData.name || 'Liam',
+        email: userData.email || 'liam.anderson@email.com',
+        phone: userData.phone || '+1 (415) 555-7890',
+        preferences: userData.preferences || {
+          notificationEmail: true,
+          notificationSMS: true,
+          autoApproveAfterTraining: false
+        }
+      };
+      setFormData(loadedFormData);
+      setOriginalFormData(loadedFormData);
     } catch (error) {
       console.error('Error loading user:', error);
+      // Set default Liam dummy data if API fails
+      const defaultUser = {
+        id: userId,
+        name: 'Liam',
+        email: 'liam.anderson@email.com',
+        phone: '+1 (415) 555-7890',
+        preferences: {
+          notificationEmail: true,
+          notificationSMS: true,
+          autoApproveAfterTraining: false,
+          trainingRounds: 8
+        },
+        trustLevel: 'training',
+        linkedAccounts: {
+          email: { linked: true, provider: 'Gmail' },
+          phone: { linked: true, verified: true },
+          calendar: { linked: false, provider: null }
+        }
+      };
+      setUser(defaultUser);
+      const defaultFormData = {
+        name: defaultUser.name,
+        email: defaultUser.email,
+        phone: defaultUser.phone,
+        preferences: defaultUser.preferences
+      };
+      setFormData(defaultFormData);
+      setOriginalFormData(defaultFormData);
     } finally {
       setLoading(false);
     }
@@ -56,6 +114,8 @@ export default function Settings() {
       
       await updateUser(userId, formData);
       setMessage('Settings saved successfully!');
+      // Update original data to reflect saved state
+      setOriginalFormData({ ...formData });
       
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
@@ -81,10 +141,21 @@ export default function Settings() {
             />
           </Link>
           <nav className={styles.nav}>
-            <Link href="/timeline" className={styles.navLink} aria-label="Timeline">
+            <Link href="/" className={`${styles.navLink} ${pathname === '/' ? styles.navLinkActive : ''}`} aria-label="Home">
+              <Image
+                src="/LOGO black.png"
+                alt="Home"
+                width={24}
+                height={24}
+                className={styles.navIcon}
+                style={{ objectFit: 'contain' }}
+              />
+              <span className={styles.navLabel}>Home</span>
+            </Link>
+            <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
               <svg
-                width="18"
-                height="18"
+                width="24"
+                height="24"
                 viewBox="0 0 20 20"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -98,16 +169,18 @@ export default function Settings() {
                   strokeLinejoin="round"
                 />
               </svg>
+              <span className={styles.navLabel}>Timeline</span>
             </Link>
-            <Link href="/settings" className={styles.navLink} aria-label="Settings">
+            <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.navLinkActive : ''}`} aria-label="Settings">
               <Image
                 src="/Liam Persona.jpeg"
                 alt="Settings"
-                width={18}
-                height={18}
+                width={24}
+                height={24}
                 className={styles.navIcon}
                 style={{ borderRadius: '50%', objectFit: 'cover' }}
               />
+              <span className={styles.navLabel}>Settings</span>
             </Link>
           </nav>
         </header>
@@ -130,10 +203,21 @@ export default function Settings() {
           />
         </Link>
         <nav className={styles.nav}>
-          <Link href="/timeline" className={styles.navLink} aria-label="Timeline">
+          <Link href="/" className={`${styles.navLink} ${pathname === '/' ? styles.navLinkActive : ''}`} aria-label="Home">
+            <Image
+              src="/LOGO black.png"
+              alt="Home"
+              width={24}
+              height={24}
+              className={styles.navIcon}
+              style={{ objectFit: 'contain' }}
+            />
+            <span className={styles.navLabel}>Home</span>
+          </Link>
+          <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
             <svg
-              width="18"
-              height="18"
+              width="24"
+              height="24"
               viewBox="0 0 20 20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -147,16 +231,18 @@ export default function Settings() {
                 strokeLinejoin="round"
               />
             </svg>
+            <span className={styles.navLabel}>Timeline</span>
           </Link>
-          <Link href="/settings" className={styles.navLink} aria-label="Settings">
+          <Link href="/settings" className={`${styles.navLink} ${pathname === '/settings' ? styles.navLinkActive : ''}`} aria-label="Settings">
             <Image
               src="/Liam Persona.jpeg"
               alt="Settings"
-              width={18}
-              height={18}
+              width={24}
+              height={24}
               className={styles.navIcon}
               style={{ borderRadius: '50%', objectFit: 'cover' }}
             />
+            <span className={styles.navLabel}>Settings</span>
           </Link>
         </nav>
       </header>
@@ -365,7 +451,11 @@ export default function Settings() {
 
         {/* Actions */}
         <div className={styles.actions}>
-          <button onClick={handleSave} className={styles.saveButton} disabled={saving}>
+          <button 
+            onClick={handleSave} 
+            className={styles.saveButton} 
+            disabled={saving || !hasChanges}
+          >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
           <button onClick={() => router.push('/')} className={styles.cancelButton}>

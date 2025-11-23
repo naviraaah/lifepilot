@@ -1,6 +1,9 @@
 .container {
   min-height: 100vh;
-  background-image: url('/backgrpund.png');
+  background-color: #ffffff;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    url('/backgrpund.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -20,10 +23,10 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(80px) saturate(200%);
+  -webkit-backdrop-filter: blur(80px) saturate(200%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 

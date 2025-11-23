@@ -21,10 +21,10 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(80px) saturate(200%);
+  -webkit-backdrop-filter: blur(80px) saturate(200%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -62,10 +62,6 @@
   gap: 0.5rem;
 }
 
-.navLink:hover .navLabel {
-  opacity: 1;
-}
-
 .navLink:hover {
   background: rgba(0, 0, 0, 0.05);
   opacity: 1;
@@ -74,6 +70,8 @@
 .navIcon {
   flex-shrink: 0;
   opacity: 0.8;
+  width: 28px;
+  height: 28px;
 }
 
 .navLink:hover .navIcon {
@@ -87,6 +85,10 @@
   color: var(--color-midnight);
   letter-spacing: 0;
   opacity: 0.8;
+}
+
+.navLink:hover .navLabel {
+  opacity: 1;
 }
 
 /* Bottom Navbar - Mobile Only */

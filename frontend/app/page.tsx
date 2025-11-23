@@ -557,7 +557,7 @@ export default function Home() {
       <header className={styles.header}>
         <Link href="/" className={styles.logoLink}>
           <Image
-            src="/full name logo colored.png"
+            src="/full name logo black.png"
             alt="LifePilot"
             width={180}
             height={40}
