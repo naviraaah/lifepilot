@@ -151,9 +151,13 @@
   flex-shrink: 0;
 }
 
+.fileInput {
+  display: none;
+}
+
 .mainInput {
   width: 100%;
-  padding: 1.75rem 6rem 1.75rem 2rem;
+  padding: 1.75rem 10rem 1.75rem 4.5rem;
   font-size: 1rem;
   border: none;
   border-radius: 24px;
@@ -182,6 +186,97 @@
 .mainInput:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.attachButton {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  color: var(--color-midnight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.attachButton:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.attachButton:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.98);
+}
+
+.attachButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.micButton {
+  position: absolute;
+  right: 4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 146, 138, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255, 146, 138, 0.2);
+  color: var(--color-sunrise-coral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(255, 146, 138, 0.15);
+  z-index: 10;
+}
+
+.micButton:hover:not(:disabled) {
+  background: rgba(255, 146, 138, 0.2);
+  border-color: rgba(255, 146, 138, 0.4);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 146, 138, 0.25);
+}
+
+.micButton:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.98);
+}
+
+.micButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.micButtonActive {
+  background: rgba(255, 146, 138, 0.25) !important;
+  border-color: var(--color-sunrise-coral) !important;
+  color: var(--color-sunrise-coral) !important;
+  box-shadow: 0 0 0 4px rgba(255, 146, 138, 0.2) !important;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(255, 146, 138, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 146, 138, 0.1);
+  }
 }
 
 .submitButton {
@@ -228,14 +323,57 @@
   background: rgba(20, 20, 20, 0.5);
 }
 
-.voiceButtonEnabled {
-  cursor: pointer !important;
-  opacity: 0.7 !important;
+.attachmentsList {
+  position: absolute;
+  bottom: -3.5rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 820px;
+  margin: 0 auto;
 }
 
-.voiceButtonEnabled:hover {
-  opacity: 1 !important;
-  background: rgba(20, 20, 20, 0.7) !important;
+.attachmentItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  font-size: 0.875rem;
+  color: var(--color-midnight);
+}
+
+.attachmentName {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachmentRemove {
+  background: none;
+  border: none;
+  color: var(--color-midnight);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.attachmentRemove:hover {
+  opacity: 1;
 }
 
 .submitButton svg {
@@ -743,11 +881,11 @@
     align-items: center;
     padding: 0.75rem 1rem;
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--color-black);
     backdrop-filter: blur(28px) saturate(180%);
     -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border-top: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.3);
     border-radius: 20px 20px 0 0;
     z-index: 100;
     width: 100%;
@@ -775,7 +913,7 @@
   .bottomNavLink:hover,
   .bottomNavLink:active {
     opacity: 1;
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .bottomNavIcon {
@@ -788,7 +926,7 @@
     display: block;
     font-size: 0.625rem;
     font-weight: 400;
-    color: var(--color-midnight);
+    color: rgba(255, 255, 255, 0.7);
     letter-spacing: 0;
     margin-top: 0.125rem;
     line-height: 1.2;
@@ -796,11 +934,12 @@
 
   .bottomNavLinkActive {
     opacity: 1 !important;
-    background: rgba(255, 146, 138, 0.15) !important;
+    background: rgba(255, 146, 138, 0.2) !important;
   }
 
   .bottomNavLinkActive .bottomNavIcon {
     opacity: 1;
+    filter: brightness(1.2);
   }
 
   .bottomNavLinkActive .bottomNavLabel {
@@ -856,12 +995,24 @@
   }
 
   .mainInput {
-    padding: 1.5rem 5rem 1.5rem 1.75rem;
+    padding: 1.5rem 8rem 1.5rem 4.5rem;
     font-size: 1rem;
     border-radius: 20px;
     min-height: 120px;
     display: flex;
     align-items: flex-start;
+  }
+
+  .attachButton {
+    width: 40px;
+    height: 40px;
+    left: 0.625rem;
+  }
+
+  .micButton {
+    width: 40px;
+    height: 40px;
+    right: 3.5rem;
   }
 
   .submitButton {
@@ -966,9 +1117,27 @@
   }
 
   .mainInput {
-    padding: 1.25rem 4.5rem 1.25rem 1.5rem;
+    padding: 1.25rem 7rem 1.25rem 4rem;
     font-size: 0.9375rem;
     min-height: 100px;
+  }
+
+  .attachButton {
+    width: 36px;
+    height: 36px;
+    left: 0.5rem;
+  }
+
+  .micButton {
+    width: 36px;
+    height: 36px;
+    right: 3rem;
+  }
+
+  .attachmentsList {
+    bottom: -3rem;
+    max-width: 100%;
+    padding: 0 1rem;
   }
 
   .submitButton {

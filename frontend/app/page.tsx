@@ -80,6 +80,11 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [micPermissionGranted, setMicPermissionGranted] = useState(false);
+  const [micPermissionRequested, setMicPermissionRequested] = useState(false);
+  const [usedVoiceInput, setUsedVoiceInput] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const finalTranscriptRef = useRef<string>("");
@@ -256,6 +261,25 @@ export default function Home() {
     }
   }, [actionLoading, userId, isVoiceMode, isSpeaking, isListening]);
 
+  // Request microphone permission
+  const requestMicrophonePermission = useCallback(async () => {
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicPermissionGranted(true);
+        setMicPermissionRequested(true);
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error("Microphone permission denied:", error);
+      setMicPermissionGranted(false);
+      setMicPermissionRequested(true);
+      alert("Microphone permission is required for voice input. Please enable it in your browser settings.");
+      return false;
+    }
+  }, []);
+
   // Initialize speech recognition and synthesis
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -289,15 +313,23 @@ export default function Home() {
           if (finalTranscript) {
             finalTranscriptRef.current = finalTranscript.trim();
             setTranscript(finalTranscript);
+            // Update input field with final transcript
+            setInput(finalTranscriptRef.current);
           } else {
             setTranscript(interimTranscript);
+            // Update input field with interim transcript
+            setInput(interimTranscript);
           }
         };
 
         recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.error("Speech recognition error:", event.error);
           setIsListening(false);
-          if (event.error === "no-speech") {
+          
+          if (event.error === "not-allowed" || event.error === "denied") {
+            setMicPermissionGranted(false);
+            alert("Microphone access was denied. Please enable it in your browser settings.");
+          } else if (event.error === "no-speech") {
             // Restart listening if no speech detected
             setTimeout(() => {
               if (isVoiceMode && !isSpeaking) {
@@ -313,12 +345,21 @@ export default function Home() {
 
         recognition.onend = () => {
           setIsListening(false);
-          // If we have a final transcript, process it
+          // If we have a final transcript, handle it
           const finalText = finalTranscriptRef.current;
-          if (finalText && isVoiceMode) {
-            finalTranscriptRef.current = "";
-            setTranscript("");
-            handleVoiceInput(finalText);
+          if (finalText) {
+            if (isVoiceMode) {
+              // In voice mode, process and speak response
+              finalTranscriptRef.current = "";
+              setTranscript("");
+              handleVoiceInput(finalText);
+            } else {
+              // In microphone button mode, just update input and stop
+              setInput(finalText);
+              setUsedVoiceInput(true); // Mark that voice input was used
+              finalTranscriptRef.current = "";
+              setTranscript("");
+            }
           } else if (isVoiceMode && !isSpeaking) {
             // Restart listening if still in voice mode
             setTimeout(() => {
@@ -365,10 +406,20 @@ export default function Home() {
     }
   }, [isListening]);
 
-  const startVoiceMode = useCallback(() => {
+  const startVoiceMode = useCallback(async () => {
+    // Request permission if not already granted
+    if (!micPermissionGranted && !micPermissionRequested) {
+      const granted = await requestMicrophonePermission();
+      if (!granted) {
+        return;
+      }
+    }
+
     setIsVoiceMode(true);
     setTranscript("");
     finalTranscriptRef.current = "";
+    setInput("");
+    
     // Start listening after a brief delay
     setTimeout(() => {
       if (synthesisRef.current) {
@@ -395,6 +446,56 @@ export default function Home() {
         synthesisRef.current.speak(utterance);
       }
     }, 300);
+  }, [micPermissionGranted, micPermissionRequested, requestMicrophonePermission]);
+
+  // Toggle listening (for microphone button)
+  const toggleListening = useCallback(async () => {
+    if (isListening) {
+      stopListening();
+      setIsVoiceMode(false);
+    } else {
+      // Request permission if not already granted
+      if (!micPermissionGranted && !micPermissionRequested) {
+        const granted = await requestMicrophonePermission();
+        if (!granted) {
+          return;
+        }
+      }
+
+      if (recognitionRef.current && !isSpeaking) {
+        try {
+          setTranscript("");
+          finalTranscriptRef.current = "";
+          setInput("");
+          recognitionRef.current.start();
+        } catch (error) {
+          console.error("Error starting recognition:", error);
+        }
+      }
+    }
+  }, [isListening, isSpeaking, micPermissionGranted, micPermissionRequested, requestMicrophonePermission, stopListening]);
+
+  // Handle attachment button click
+  const handleAttachmentClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  // Handle file selection
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      setAttachments((prev) => [...prev, ...fileArray]);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  // Remove attachment
+  const removeAttachment = useCallback((index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const stopVoiceMode = useCallback(() => {
@@ -468,6 +569,11 @@ export default function Home() {
           )
         );
       } else {
+        const responseText =
+          result.summary ||
+          result.details?.response ||
+          "I received your message.";
+        
         // Remove loading message and add AI response
         setMessages((prev) =>
           prev.map((msg) =>
@@ -475,10 +581,7 @@ export default function Home() {
               ? {
                   id: loadingMessageId,
                   role: "assistant",
-                  content:
-                    result.summary ||
-                    result.details?.response ||
-                    "I received your message.",
+                  content: responseText,
                   timestamp: new Date(),
                   details: result.details,
                   routedAgent: result.routedAgent,
@@ -487,6 +590,29 @@ export default function Home() {
               : msg
           )
         );
+
+        // Speak the response if voice input was used
+        if (usedVoiceInput && synthesisRef.current && !isSpeaking) {
+          setIsSpeaking(true);
+          const utterance = new SpeechSynthesisUtterance(responseText);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            setUsedVoiceInput(false); // Reset after speaking
+          };
+
+          utterance.onerror = () => {
+            setIsSpeaking(false);
+            setUsedVoiceInput(false);
+          };
+
+          synthesisRef.current.speak(utterance);
+        } else {
+          setUsedVoiceInput(false); // Reset if not speaking
+        }
       }
     } catch (err: any) {
       console.error("Error calling agent:", err);
@@ -533,6 +659,29 @@ export default function Home() {
             : msg
         )
       );
+
+      // Speak error message if voice input was used
+      if (usedVoiceInput && synthesisRef.current && !isSpeaking) {
+        setIsSpeaking(true);
+        const utterance = new SpeechSynthesisUtterance(errorMessage);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          setUsedVoiceInput(false);
+        };
+
+        utterance.onerror = () => {
+          setIsSpeaking(false);
+          setUsedVoiceInput(false);
+        };
+
+        synthesisRef.current.speak(utterance);
+      } else {
+        setUsedVoiceInput(false);
+      }
     } finally {
       setActionLoading(false);
     }
@@ -724,9 +873,47 @@ export default function Home() {
           {/* Main Input */}
           <form onSubmit={handleSubmit} className={styles.inputForm}>
             <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              multiple
+              className={styles.fileInput}
+              aria-label="File input"
+            />
+            <button
+              type="button"
+              onClick={handleAttachmentClick}
+              className={styles.attachButton}
+              disabled={actionLoading}
+              aria-label="Add attachment"
+              title="Add attachment"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 4V16M4 10H16"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <input
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                // Reset voice input flag if user types manually
+                if (e.target.value && !isListening) {
+                  setUsedVoiceInput(false);
+                }
+              }}
               placeholder={
                 hasMessages
                   ? "Type your message..."
@@ -737,17 +924,65 @@ export default function Home() {
               autoFocus
             />
             <button
-              type={input.trim() ? "submit" : "button"}
-              onClick={!input.trim() ? (e) => { e.preventDefault(); startVoiceMode(); } : undefined}
+              type="button"
+              onClick={toggleListening}
+              className={`${styles.micButton} ${
+                isListening ? styles.micButtonActive : ""
+              }`}
+              disabled={actionLoading || isSpeaking}
+              aria-label={isListening ? "Stop listening" : "Start voice input"}
+              title={isListening ? "Stop listening" : "Start voice input"}
+            >
+              {isListening ? (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect
+                    x="3"
+                    y="8"
+                    width="14"
+                    height="4"
+                    rx="2"
+                    fill="currentColor"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 1C8.34 1 7 2.34 7 4V10C7 11.66 8.34 13 10 13C11.66 13 13 11.66 13 10V4C13 2.34 11.66 1 10 1Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M15 9C15 12.31 12.31 15 9 15M9 15V18M9 15H6M9 15H12"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </button>
+            <button
+              type="submit"
               className={`${styles.submitButton} ${
                 input.trim() && !actionLoading ? styles.submitButtonEnabled : ""
-              } ${!input.trim() && !actionLoading ? styles.voiceButtonEnabled : ""}`}
-              disabled={actionLoading}
-              aria-label={input.trim() ? "Submit" : "Start voice input"}
+              }`}
+              disabled={actionLoading || !input.trim()}
+              aria-label="Submit"
             >
               {actionLoading ? (
                 <span className={styles.spinner}>⏳</span>
-              ) : input.trim() ? (
+              ) : (
                 <svg
                   width="20"
                   height="20"
@@ -763,57 +998,25 @@ export default function Home() {
                     strokeLinejoin="round"
                   />
                 </svg>
-              ) : (
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect
-                    x="3"
-                    y="6"
-                    width="2"
-                    height="8"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="6"
-                    y="5"
-                    width="2"
-                    height="10"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="9"
-                    y="4"
-                    width="2"
-                    height="12"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="12"
-                    y="5"
-                    width="2"
-                    height="10"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                  <rect
-                    x="15"
-                    y="6"
-                    width="2"
-                    height="8"
-                    rx="1"
-                    fill="currentColor"
-                  />
-                </svg>
               )}
             </button>
+            {attachments.length > 0 && (
+              <div className={styles.attachmentsList}>
+                {attachments.map((file, index) => (
+                  <div key={index} className={styles.attachmentItem}>
+                    <span className={styles.attachmentName}>{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(index)}
+                      className={styles.attachmentRemove}
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </form>
 
           {/* Quick Actions - only show when no messages */}

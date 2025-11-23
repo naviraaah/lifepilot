@@ -621,11 +621,11 @@
     align-items: center;
     padding: 0.75rem 1rem;
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--color-black);
     backdrop-filter: blur(28px) saturate(180%);
     -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border-top: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.3);
     border-radius: 20px 20px 0 0;
     z-index: 100;
     width: 100%;
@@ -653,7 +653,7 @@
   .bottomNavLink:hover,
   .bottomNavLink:active {
     opacity: 1;
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .bottomNavIcon {
@@ -666,7 +666,7 @@
     display: block;
     font-size: 0.625rem;
     font-weight: 400;
-    color: var(--color-midnight);
+    color: rgba(255, 255, 255, 0.7);
     letter-spacing: 0;
     margin-top: 0.125rem;
     line-height: 1.2;
@@ -674,11 +674,12 @@
 
   .bottomNavLinkActive {
     opacity: 1 !important;
-    background: rgba(255, 146, 138, 0.15) !important;
+    background: rgba(255, 146, 138, 0.2) !important;
   }
 
   .bottomNavLinkActive .bottomNavIcon {
     opacity: 1;
+    filter: brightness(1.2);
   }
 
   .bottomNavLinkActive .bottomNavLabel {
