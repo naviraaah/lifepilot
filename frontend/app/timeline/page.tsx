@@ -210,6 +210,25 @@ export default function Timeline() {
               />
               <span className={styles.navLabel}>Home</span>
             </Link>
+            <Link href="/chat" className={`${styles.navLink} ${pathname === '/chat' ? styles.navLinkActive : ''}`} aria-label="Chat">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={styles.navIcon}
+              >
+                <path
+                  d="M17 5H3C2.45 5 2 5.45 2 6V14C2 14.55 2.45 15 3 15H4L6 17L8 15H17C17.55 15 18 14.55 18 14V6C18 5.45 17.55 5 17 5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className={styles.navLabel}>Chat</span>
+            </Link>
             <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Overview">
               <svg
                 width="24"
@@ -254,6 +273,25 @@ export default function Timeline() {
               style={{ objectFit: 'contain' }}
             />
             <span className={styles.bottomNavLabel}>Home</span>
+          </Link>
+          <Link href="/chat" className={`${styles.bottomNavLink} ${pathname === '/chat' ? styles.bottomNavLinkActive : ''}`} aria-label="Chat">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className={styles.bottomNavIcon}
+            >
+              <path
+                d="M17 5H3C2.45 5 2 5.45 2 6V14C2 14.55 2.45 15 3 15H4L6 17L8 15H17C17.55 15 18 14.55 18 14V6C18 5.45 17.55 5 17 5Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className={styles.bottomNavLabel}>Chat</span>
           </Link>
           <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Overview">
             <svg
@@ -318,6 +356,25 @@ export default function Timeline() {
             />
             <span className={styles.navLabel}>Home</span>
           </Link>
+          <Link href="/chat" className={`${styles.navLink} ${pathname === '/chat' ? styles.navLinkActive : ''}`} aria-label="Chat">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className={styles.navIcon}
+            >
+              <path
+                d="M17 5H3C2.45 5 2 5.45 2 6V14C2 14.55 2.45 15 3 15H4L6 17L8 15H17C17.55 15 18 14.55 18 14V6C18 5.45 17.55 5 17 5Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className={styles.navLabel}>Chat</span>
+          </Link>
           <Link href="/timeline" className={`${styles.navLink} ${pathname === '/timeline' ? styles.navLinkActive : ''}`} aria-label="Timeline">
             <svg
               width="24"
@@ -363,6 +420,25 @@ export default function Timeline() {
             style={{ objectFit: 'contain' }}
           />
           <span className={styles.bottomNavLabel}>Home</span>
+        </Link>
+        <Link href="/chat" className={`${styles.bottomNavLink} ${pathname === '/chat' ? styles.bottomNavLinkActive : ''}`} aria-label="Chat">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={styles.bottomNavIcon}
+          >
+            <path
+              d="M17 5H3C2.45 5 2 5.45 2 6V14C2 14.55 2.45 15 3 15H4L6 17L8 15H17C17.55 15 18 14.55 18 14V6C18 5.45 17.55 5 17 5Z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className={styles.bottomNavLabel}>Chat</span>
         </Link>
         <Link href="/timeline" className={`${styles.bottomNavLink} ${pathname === '/timeline' ? styles.bottomNavLinkActive : ''}`} aria-label="Timeline">
           <svg

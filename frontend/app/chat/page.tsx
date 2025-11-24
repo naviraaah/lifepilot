@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { sendAgentRequest } from "../lib/api";
-import styles from "./page.module.css";
+import { sendAgentRequest } from "../../lib/api";
+import styles from "../page.module.css";
 
 /**
  * Converts markdown text to HTML
@@ -143,12 +143,38 @@ interface ChatMessage {
   routedAgent?: string;
 }
 
-export default function Home() {
+interface ChatConversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export default function ChatPage() {
   const pathname = usePathname();
-  const router = useRouter();
   const [input, setInput] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    // Load messages from sessionStorage if available (when navigating from home page)
+    if (typeof window !== 'undefined') {
+      const savedMessages = sessionStorage.getItem('chatMessages');
+      if (savedMessages) {
+        try {
+          const parsed = JSON.parse(savedMessages);
+          // Clear sessionStorage after loading
+          sessionStorage.removeItem('chatMessages');
+          return parsed.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+        } catch (e) {
+          console.error('Error parsing saved messages:', e);
+        }
+      }
+    }
+    return [];
+  });
   const [placeholderText, setPlaceholderText] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
@@ -171,14 +197,63 @@ export default function Home() {
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const finalTranscriptRef = useRef<string>("");
 
-  // Navigate to /chat when chat starts (first message is added)
+  // Chat history state
+  const [chatHistory, setChatHistory] = useState<ChatConversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+
+  // Load chat history from localStorage on mount
   useEffect(() => {
-    if (messages.length > 0 && pathname === '/') {
-      // Save messages to sessionStorage before navigating
-      sessionStorage.setItem('chatMessages', JSON.stringify(messages));
-      router.push('/chat');
+    if (typeof window !== 'undefined') {
+      const savedHistory = localStorage.getItem('chatHistory');
+      if (savedHistory) {
+        try {
+          const parsed = JSON.parse(savedHistory);
+          setChatHistory(parsed.map((conv: any) => ({
+            ...conv,
+            createdAt: new Date(conv.createdAt),
+            updatedAt: new Date(conv.updatedAt),
+            messages: conv.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }))
+          })));
+        } catch (e) {
+          console.error('Error parsing chat history:', e);
+        }
+      }
     }
-  }, [messages.length, pathname, router, messages]);
+  }, []);
+
+  // Save conversation to history when messages change
+  useEffect(() => {
+    if (messages.length > 0 && typeof window !== 'undefined') {
+      const conversationId = currentConversationId || `conv_${Date.now()}`;
+      if (!currentConversationId) {
+        setCurrentConversationId(conversationId);
+      }
+
+      // Get title from first user message
+      const firstUserMessage = messages.find(msg => msg.role === 'user' && !msg.isLoading);
+      const title = firstUserMessage?.content.slice(0, 50) || 'New Conversation';
+
+      // Update or add conversation to history
+      setChatHistory(prev => {
+        const existingConv = prev.find(c => c.id === conversationId);
+        const conversation: ChatConversation = {
+          id: conversationId,
+          title,
+          messages: messages.filter(msg => !msg.isLoading), // Don't save loading messages
+          createdAt: existingConv?.createdAt || new Date(),
+          updatedAt: new Date()
+        };
+        const filtered = prev.filter(c => c.id !== conversationId);
+        const updated = [conversation, ...filtered].slice(0, 50); // Keep last 50 conversations
+        localStorage.setItem('chatHistory', JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [messages, currentConversationId]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -406,7 +481,7 @@ export default function Home() {
     } finally {
       setActionLoading(false);
     }
-  }, [actionLoading, userId, isVoiceMode, isSpeaking, isListening, messages, pathname, router]);
+  }, [actionLoading, userId, isVoiceMode, isSpeaking, isListening, messages]);
 
   // Request microphone permission
   const requestMicrophonePermission = useCallback(async () => {
@@ -862,18 +937,55 @@ export default function Home() {
     }
   };
 
-  const handleQuickAction = async (prompt: string) => {
-    setInput(prompt);
-    // Auto-submit after a brief delay to show the text
-    setTimeout(() => {
-      const form = document.querySelector("form");
-      if (form) {
-        form.requestSubmit();
+  // Load a conversation from history
+  const loadConversation = (conversationId: string) => {
+    const conversation = chatHistory.find(c => c.id === conversationId);
+    if (conversation) {
+      setMessages(conversation.messages);
+      setCurrentConversationId(conversationId);
+      setShowHistorySidebar(false);
+    }
+  };
+
+  // Start a new conversation
+  const startNewConversation = () => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    setShowHistorySidebar(false);
+  };
+
+  // Delete a conversation
+  const deleteConversation = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setChatHistory(prev => {
+      const updated = prev.filter(c => c.id !== conversationId);
+      localStorage.setItem('chatHistory', JSON.stringify(updated));
+      if (currentConversationId === conversationId) {
+        setMessages([]);
+        setCurrentConversationId(null);
       }
-    }, 100);
+      return updated;
+    });
   };
 
   const hasMessages = messages.length > 0;
+
+  // Format date for display
+  const formatHistoryDate = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -1018,16 +1130,12 @@ export default function Home() {
       </nav>
 
       {/* Main Content */}
-      <main className={styles.main}>
-        <div className={styles.content}>
-          {/* Greeting - only show when no messages */}
-          {!hasMessages && (
-          <div className={styles.greeting}>
-              <h1>Share your boring tasks</h1>
-            <p>Tell me what you need, and I'll handle it for you</p>
-          </div>
-          )}
-
+      <main className={styles.main} style={{ position: 'relative' }}>
+        <div className={styles.content} style={{ 
+          marginRight: showHistorySidebar ? '320px' : '0', 
+          transition: 'margin-right 0.3s ease',
+          maxWidth: showHistorySidebar ? 'calc(850px - 320px)' : '850px'
+        }}>
           {/* Chat Thread */}
           {hasMessages && (
             <div className={styles.chatThread}>
@@ -1123,7 +1231,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => {
-                      handleQuickAction("Monitor and compare prices");
+                      setInput("Monitor and compare prices");
                       setShowAddMenu(false);
                     }}
                     className={styles.addMenuPrompt}
@@ -1134,7 +1242,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => {
-                      handleQuickAction("Book an appointment");
+                      setInput("Book an appointment");
                       setShowAddMenu(false);
                     }}
                     className={styles.addMenuPrompt}
@@ -1145,7 +1253,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => {
-                      handleQuickAction("Book a flight");
+                      setInput("Book a flight");
                       setShowAddMenu(false);
                     }}
                     className={styles.addMenuPrompt}
@@ -1156,7 +1264,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => {
-                      handleQuickAction("Teach my friend to click a picture");
+                      setInput("Teach my friend to click a picture");
                       setShowAddMenu(false);
                     }}
                     className={styles.addMenuPrompt}
@@ -1185,7 +1293,7 @@ export default function Home() {
                   setUsedVoiceInput(false);
                 }
               }}
-              placeholder={placeholderText || "Schedule a dentist appointment near me..."}
+              placeholder={placeholderText || "Type your message..."}
               className={styles.mainInput}
               disabled={actionLoading}
               autoFocus
@@ -1297,139 +1405,82 @@ export default function Home() {
               </div>
             )}
           </form>
-
-          {/* Quick Actions - only show when no messages */}
-          {!hasMessages && (
-          <div className={styles.quickActions}>
-              <p className={styles.quickActionsLabel}>
-                Not sure where to start? Try one of these:
-              </p>
-            <div className={styles.quickActionGrid}>
-              <button 
-                  onClick={() =>
-                    handleQuickAction(
-                      "Find me a dentist near SoMa after 5pm next week"
-                    )
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                <span className={styles.quickActionIcon}>🦷</span>
-                  <span className={styles.quickActionText}>
-                    Schedule Dentist
-                  </span>
-              </button>
-              <button 
-                  onClick={() =>
-                    handleQuickAction(
-                      "Cancel my Calm subscription before it renews"
-                    )
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                <span className={styles.quickActionIcon}>❌</span>
-                  <span className={styles.quickActionText}>
-                    Cancel Subscription
-                  </span>
-              </button>
-              <button 
-                  onClick={() =>
-                    handleQuickAction(
-                      "Dispute that $250 charge from Gas Station XYZ"
-                    )
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                <span className={styles.quickActionIcon}>💳</span>
-                <span className={styles.quickActionText}>Dispute Charge</span>
-              </button>
-              <button 
-                  onClick={() =>
-                    handleQuickAction(
-                      "Compare Sony WH-1000XM5 prices on Amazon, Best Buy, and Target"
-                    )
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                  <span className={styles.quickActionIcon}>💰</span>
-                  <span className={styles.quickActionText}>Compare Prices</span>
-              </button>
-              <button 
-                  onClick={() =>
-                    handleQuickAction(
-                      "Research iPhone 15 Pro specifications and reviews"
-                    )
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                  <span className={styles.quickActionIcon}>🔍</span>
-                  <span className={styles.quickActionText}>
-                    Research Product
-                  </span>
-              </button>
-              <button 
-                  onClick={() =>
-                    handleQuickAction(
-                      "Book a haircut appointment for this Saturday morning"
-                    )
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                <span className={styles.quickActionIcon}>💇</span>
-                <span className={styles.quickActionText}>Book Haircut</span>
-              </button>
-              <button 
-                  onClick={() =>
-                    handleQuickAction(
-                      "Find the best Italian restaurant for dinner tonight"
-                    )
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                  <span className={styles.quickActionIcon}>🍝</span>
-                  <span className={styles.quickActionText}>
-                    Find Restaurant
-                  </span>
-              </button>
-              <button 
-                  onClick={() =>
-                    handleQuickAction("Cancel my Netflix subscription")
-                  }
-                className={styles.quickActionPill}
-                disabled={actionLoading}
-              >
-                <span className={styles.quickActionIcon}>📺</span>
-                <span className={styles.quickActionText}>Cancel Netflix</span>
-              </button>
-                <button
-                  onClick={() =>
-                    handleQuickAction("Add DCS to my account")
-                  }
-                  className={styles.quickActionPill}
-                  disabled={actionLoading}
-                >
-                  <span className={styles.quickActionIcon}>➕</span>
-                  <span className={styles.quickActionText}>Add DCS</span>
-              </button>
-            </div>
-          </div>
-          )}
-
-          {/* Footer Info */}
-          {!hasMessages && (
-          <div className={styles.footerInfo}>
-              <p>
-                Built with AGI, OpenAI GPT-4 · Autonomous Agent Infrastructure
-              </p>
-          </div>
-          )}
         </div>
+
+        {/* Chat History Sidebar */}
+        <div className={styles.chatHistorySidebar} style={{ 
+          transform: showHistorySidebar ? 'translateX(0)' : 'translateX(100%)',
+          opacity: showHistorySidebar ? 1 : 0,
+          pointerEvents: showHistorySidebar ? 'auto' : 'none'
+        }}>
+          <div className={styles.chatHistoryHeader}>
+            <h2>Chat History</h2>
+            <button
+              onClick={() => setShowHistorySidebar(false)}
+              className={styles.chatHistoryClose}
+              aria-label="Close history"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div className={styles.chatHistoryContent}>
+            <button
+              onClick={startNewConversation}
+              className={styles.newChatButton}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              New Chat
+            </button>
+            {chatHistory.length === 0 ? (
+              <div className={styles.emptyHistory}>
+                <p>No chat history yet</p>
+                <p className={styles.emptyHistorySubtext}>Start a conversation to see it here</p>
+              </div>
+            ) : (
+              <div className={styles.chatHistoryList}>
+                {chatHistory.map((conversation) => (
+                  <div
+                    key={conversation.id}
+                    className={`${styles.chatHistoryItem} ${currentConversationId === conversation.id ? styles.chatHistoryItemActive : ''}`}
+                    onClick={() => loadConversation(conversation.id)}
+                  >
+                    <div className={styles.chatHistoryItemContent}>
+                      <div className={styles.chatHistoryItemTitle}>{conversation.title}</div>
+                      <div className={styles.chatHistoryItemMeta}>
+                        <span className={styles.chatHistoryItemDate}>{formatHistoryDate(conversation.updatedAt)}</span>
+                        <span className={styles.chatHistoryItemCount}>{conversation.messages.length} messages</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => deleteConversation(conversation.id, e)}
+                      className={styles.chatHistoryDelete}
+                      aria-label="Delete conversation"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 6H5H17M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2C10.5304 2 11.0391 2.21071 11.4142 2.58579C11.7893 2.96086 12 3.46957 12 4V6M15 6V16C15 16.5304 14.7893 17.0391 14.4142 17.4142C14.0391 17.7893 13.5304 18 13 18H7C6.46957 18 5.96086 17.7893 5.58579 17.4142C5.21071 17.0391 5 16.5304 5 16V6H15Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* History Toggle Button */}
+        <button
+          onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+          className={styles.historyToggleButton}
+          aria-label="Toggle chat history"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 4H17M3 8H17M3 12H13M3 16H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </main>
 
       {/* Voice Mode Overlay */}
@@ -1567,3 +1618,4 @@ export default function Home() {
     </div>
   );
 }
+
